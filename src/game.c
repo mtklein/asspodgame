@@ -56,8 +56,8 @@ static void setup_chapter_1(void) {
     // Load starting map (DFWTF HQ)
     map_load(&map_dfwtf_hq);
 
-    // Create player entities
-    int trevor = entity_create(ENT_PLAYER_TREVOR, 80, 80);
+    // Create player entities (spawn in the hallway — rows 7-8 are walkable)
+    int trevor = entity_create(ENT_PLAYER_TREVOR, 40, 56);
     if (trevor >= 0) {
         entities[trevor].base_tile = SPR_TREVOR_BASE;
         entities[trevor].walk_speed = 2;
@@ -70,7 +70,7 @@ static void setup_chapter_1(void) {
         active_player = trevor;
     }
 
-    int kip = entity_create(ENT_PLAYER_KIP, 96, 80);
+    int kip = entity_create(ENT_PLAYER_KIP, 56, 56);
     if (kip >= 0) {
         entities[kip].base_tile = SPR_KIP_BASE;
         entities[kip].walk_speed = 2;
@@ -82,30 +82,33 @@ static void setup_chapter_1(void) {
         };
     }
 
-    // Create NPCs
-    int rubik = entity_create(ENT_NPC, 120, 48);
+    // Create NPCs (all positions verified against collision map)
+    // Rubik: room at row 4, col 9-11 (walkable)
+    int rubik = entity_create(ENT_NPC, 72, 32);
     if (rubik >= 0) {
         entities[rubik].base_tile = SPR_RUBIK_BASE;
         entities[rubik].dialogue_id = DLG_RUBIK_INTRO;
         entities[rubik].dir = DIR_DOWN;
     }
 
-    int peacemaker = entity_create(ENT_NPC, 160, 64);
+    // Peacemaker: hallway row 7, col 18 (walkable)
+    int peacemaker = entity_create(ENT_NPC, 144, 56);
     if (peacemaker >= 0) {
         entities[peacemaker].base_tile = SPR_GENERIC_BASE;
         entities[peacemaker].dialogue_id = DLG_PEACEMAKER_HINT;
         entities[peacemaker].dir = DIR_LEFT;
     }
 
-    int ramis = entity_create(ENT_NPC, 48, 112);
+    // Ramis: room at row 12, col 1-3 (walkable)
+    int ramis = entity_create(ENT_NPC, 16, 96);
     if (ramis >= 0) {
         entities[ramis].base_tile = SPR_GENERIC_BASE;
         entities[ramis].dialogue_id = DLG_RAMIS_CAR;
         entities[ramis].dir = DIR_RIGHT;
     }
 
-    // Random cops
-    int cop1 = entity_create(ENT_NPC, 192, 96);
+    // Random cop: hallway row 8, col 22 (walkable)
+    int cop1 = entity_create(ENT_NPC, 176, 64);
     if (cop1 >= 0) {
         entities[cop1].base_tile = SPR_GENERIC_BASE;
         entities[cop1].dialogue_id = DLG_RANDOM_COP_1;
@@ -119,8 +122,10 @@ void game_init(void) {
     entity_init();
     text_init();
 
-    // Start at title screen
+    // Reset all state machines
     game_state = STATE_TITLE;
+    combat_state = COMBAT_INACTIVE;
+    dlg_state = DLG_INACTIVE;
 
     // Enable timer for RNG
     REG_TM0CNT_H = TM_ENABLE | TM_FREQ_1024;
@@ -132,6 +137,8 @@ void game_init(void) {
 void game_update(void) {
     input_poll();
     debug_input_update();
+
+    GameState prev_state = game_state;
 
     switch (game_state) {
     case STATE_TITLE:
@@ -187,6 +194,8 @@ void game_update(void) {
         // TODO: pause menu with stats, Fate points, aspects
         if (key_hit(KEY_START)) {
             game_state = STATE_EXPLORE;
+            // Re-enable exploration display
+            REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_BG1 | DCNT_OBJ | DCNT_OBJ_1D;
         }
         break;
 
@@ -195,7 +204,10 @@ void game_update(void) {
     }
 
     // START opens menu during exploration (if not in dialogue/combat)
-    if (game_state == STATE_EXPLORE && !dialogue_active() && !combat_active()) {
+    // Guard: only if we were already in EXPLORE before the switch above
+    // (prevents same-frame MENU→EXPLORE→MENU bounce)
+    if (game_state == STATE_EXPLORE && prev_state == STATE_EXPLORE &&
+        !dialogue_active() && !combat_active()) {
         if (key_hit(KEY_START)) {
             game_state = STATE_MENU;
         }
@@ -219,6 +231,14 @@ void game_draw(void) {
         if (combat_active()) {
             combat_draw();
         }
+        break;
+
+    case STATE_MENU:
+        // Keep rendering the game world behind the menu
+        map_apply_scroll();
+        entity_draw_all();
+        // TODO: draw menu UI overlay here
+        sprite_update_oam();
         break;
 
     case STATE_MAP_TRANSITION:

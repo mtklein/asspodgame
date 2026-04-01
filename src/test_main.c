@@ -358,6 +358,109 @@ static void test_combat_system(void) {
 }
 
 // ============================================================================
+// REGRESSION TESTS
+// ============================================================================
+
+// Regression: players must spawn on walkable tiles
+static void test_spawn_walkable(void) {
+    // Boot the game to EXPLORE
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+    record_result(game_state == STATE_EXPLORE, "reg_spawn: reached EXPLORE");
+
+    // Check that both players can actually move from their spawn
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        Entity *e = &entities[i];
+        if (!e->active) continue;
+        if (e->type == ENT_PLAYER_TREVOR) {
+            int old_x = e->x;
+            int moved = entity_move(i, 2, 0);
+            record_result(moved == 1, "reg_spawn: Trevor can move from spawn");
+            e->x = old_x;  // restore
+        }
+        if (e->type == ENT_PLAYER_KIP) {
+            int old_x = e->x;
+            int moved = entity_move(i, 2, 0);
+            record_result(moved == 1, "reg_spawn: Kip can move from spawn");
+            e->x = old_x;  // restore
+        }
+    }
+}
+
+// Regression: START menu must be escapable (no same-frame bounce)
+static void test_start_menu_toggle(void) {
+    // Ensure we're in EXPLORE first
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+    record_result(game_state == STATE_EXPLORE, "reg_menu: starts in EXPLORE");
+
+    // Press START → should enter MENU
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    record_result(game_state == STATE_MENU, "reg_menu: START enters MENU");
+
+    // Release, then press START again → should return to EXPLORE
+    game_update();  // one frame with no keys (clears key_hit)
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    record_result(game_state == STATE_EXPLORE, "reg_menu: START exits MENU");
+
+    // And one more toggle to be sure
+    game_update();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    record_result(game_state == STATE_MENU, "reg_menu: START re-enters MENU");
+}
+
+// Regression: SELECT must swap characters in both directions
+static void test_select_swap_roundtrip(void) {
+    // Boot game
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+
+    int first = active_player;
+    EntityType first_type = entities[first].type;
+
+    // First swap: Trevor → Kip (or whatever order)
+    sim_key(KEY_SELECT);
+    game_update();
+    sim_no_key();
+    game_update();  // clear key state
+
+    int second = active_player;
+    record_result(second != first, "reg_swap: first SELECT changes player");
+    record_result(entities[second].type != first_type, "reg_swap: swapped to different type");
+
+    // Second swap: should return to original
+    sim_key(KEY_SELECT);
+    game_update();
+    sim_no_key();
+
+    record_result(active_player == first, "reg_swap: second SELECT returns to original");
+    record_result(entities[active_player].type == first_type, "reg_swap: back to original type");
+
+    // Third swap: verify it keeps working
+    game_update();  // clear key state
+    sim_key(KEY_SELECT);
+    game_update();
+    sim_no_key();
+
+    record_result(active_player == second, "reg_swap: third SELECT works too");
+}
+
+// ============================================================================
 // TEST RUNNER
 // ============================================================================
 
@@ -423,6 +526,11 @@ int main(void) {
 
     // Combat tests
     test_combat_system();
+
+    // Regression tests
+    test_spawn_walkable();
+    test_start_menu_toggle();
+    test_select_swap_roundtrip();
 
     // --- Report results ---
     mgba_log(MGBA_LOG_INFO, "=== Test Results ===");
