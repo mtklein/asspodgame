@@ -32,7 +32,7 @@ build $builddir/gbafix: hostcc tools/gbafix.c
 build $builddir/run_tests: hostcc_mgba tools/run_tests.c
 
 # Generated data from levels/
-build $builddir/gen_maps.c $builddir/gen_maps.h: bake_maps | levels/maps/dfwtf_hq.json levels/maps/dfw_streets.json levels/maps/taco_bongo.json
+build $builddir/gen_maps.c $builddir/gen_maps.h: bake_maps | levels/maps/dfwtf_hq.json levels/maps/dfw_streets.json levels/maps/taco_bongo.json levels/tilesets/tileset_urban.tsj
 build $builddir/gen_dialogue.c $builddir/gen_dialogue.h: bake_dialogue | levels/dialogue/rubik_intro.json levels/dialogue/peacemaker_hint.json levels/dialogue/donny_tacos.json levels/dialogue/ramis_car.json levels/dialogue/random_cop_1.json levels/dialogue/random_cop_2.json levels/dialogue/informant.json
 
 # Shared objects (used by both game and test ROMs)
