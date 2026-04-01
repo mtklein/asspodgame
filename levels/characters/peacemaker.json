@@ -1,0 +1,31 @@
+{
+  "id": "peacemaker",
+  "name": "Shauna Peacemaker",
+  "role": "npc",
+  "entity_type": "ENT_NPC",
+
+  "appearance": {
+    "summary": "A tall, serious woman in a crisp uniform. All business. Hair pulled back tight, posture military-straight. Looks like she could stare down a charging bull and the bull would apologize. The kind of person who irons their jeans.",
+    "build": "tall, athletic, upright",
+    "hair": "dark, pulled back tight",
+    "skin_tone": "dark",
+    "outfit": "DFWTF uniform, badge visible, utility belt",
+    "age_range": "early 40s",
+    "height": "tall"
+  },
+
+  "personality": {
+    "summary": "The mission briefer and senior operative. Focused, direct, no tolerance for nonsense. But reveals emotional investment in the community — the Taco-Bongo is SACRED to her. Under the drill-sergeant exterior is someone who genuinely loves this city.",
+    "traits": ["focused", "direct", "passionate about DFW", "no-nonsense"],
+    "speech_style": "Short declarative sentences. Commands, not requests. 'Listen up. There's been a robbery on Main Street.' Raises voice when someone disrespects local institutions.",
+    "quirks": ["treats the Taco-Bongo like hallowed ground", "always stands, never sits", "taps foot when impatient"]
+  },
+
+  "sprite": {
+    "base_tile": "SPR_GENERIC_BASE"
+  },
+
+  "dialogue_id": "DLG_PEACEMAKER_HINT",
+  "direction": "DIR_LEFT",
+  "behavior": 0
+}

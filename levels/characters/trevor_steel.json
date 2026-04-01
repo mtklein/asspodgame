@@ -1,0 +1,53 @@
+{
+  "id": "trevor_steel",
+  "name": "Trevor Steel",
+  "role": "player",
+  "entity_type": "ENT_PLAYER_TREVOR",
+
+  "appearance": {
+    "summary": "A square-jawed, broad-shouldered man in a sharp dark blue suit with a red tie. Clean-cut with short brown hair, strong chin. Always wearing sunglasses indoors. Looks like a cop who watched too many action movies growing up and dressed accordingly. Built like a brick wall but carries himself with smooth confidence.",
+    "build": "broad-shouldered, stocky, imposing",
+    "hair": "short, brown, neatly combed",
+    "skin_tone": "medium",
+    "outfit": "dark blue suit, red tie, sunglasses",
+    "age_range": "mid-30s",
+    "height": "tall"
+  },
+
+  "personality": {
+    "summary": "A smooth-talking gunslinger who introduces himself like a Bond villain. Takes himself very seriously, which is both his strength and his comedy. Genuinely brave and competent but has a flair for the dramatic. Loyal to the team even when he's posturing.",
+    "traits": ["confident", "dramatic", "loyal", "dry wit"],
+    "speech_style": "Clipped, action-hero one-liners. Introduces himself in third person. Says things like 'The name's Steel. Trevor Steel.' without irony.",
+    "quirks": ["adjusts sunglasses constantly", "speaks in third person occasionally", "treats every situation like a movie scene"]
+  },
+
+  "stats": {
+    "shoot": 3,
+    "brawn": 1,
+    "brains": 1,
+    "talk": 3,
+    "cool": 2,
+    "hp": 8,
+    "hp_max": 8,
+    "fate_points": 3,
+    "fate_max": 5
+  },
+
+  "sprite": {
+    "base_tile": "SPR_TREVOR_BASE",
+    "palette_colors": {
+      "hair": 5,
+      "skin": 4,
+      "suit": 7,
+      "tie": 6,
+      "pants": 2
+    },
+    "walk_speed": 2
+  },
+
+  "relationships": {
+    "kip_simpkins": "Partner. They balance each other — Trevor talks, Kip punches. Genuine friendship underneath the banter.",
+    "rubik": "Boss. Trevor respects him but can't resist the dramatic entrance.",
+    "donny": "Colleague. Trevor tolerates Donny's taco obsession with bemused affection."
+  }
+}

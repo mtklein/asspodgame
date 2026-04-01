@@ -1,0 +1,37 @@
+{
+  "id": "rubik",
+  "name": "Jim Rubik",
+  "role": "npc",
+  "entity_type": "ENT_NPC",
+
+  "appearance": {
+    "summary": "A stocky, round man in a rumpled grey suit. Balding on top with wisps of brown hair on the sides. Looks tired. The kind of boss who's seen everything twice and is unimpressed by all of it. Permanent five-o'clock shadow. Coffee stain on his tie that he stopped caring about years ago.",
+    "build": "stocky, round, wide",
+    "hair": "balding, brown wisps",
+    "skin_tone": "medium, weathered",
+    "outfit": "grey suit, loosened tie",
+    "age_range": "mid-50s",
+    "height": "short"
+  },
+
+  "personality": {
+    "summary": "The weary chief of DFWTF. Dry, sarcastic, and deeply competent under the cynicism. Genuinely cares about his people but expresses it through insults. 'Try not to die' is his version of 'good luck.' Has been doing this too long to be surprised by anything.",
+    "traits": ["sarcastic", "world-weary", "competent", "protective"],
+    "speech_style": "Deadpan delivery. Economy of words. Every sentence sounds like he's already regretting saying it. 'Sure you do. Case file's on your desk. Try not to die.'",
+    "quirks": ["always has coffee", "sighs before giving orders", "calls everyone by last name"]
+  },
+
+  "sprite": {
+    "base_tile": "SPR_RUBIK_BASE",
+    "palette_colors": {
+      "hair": 5,
+      "skin": 4,
+      "suit": 3,
+      "pants": 2
+    }
+  },
+
+  "dialogue_id": "DLG_RUBIK_INTRO",
+  "direction": "DIR_DOWN",
+  "behavior": 0
+}

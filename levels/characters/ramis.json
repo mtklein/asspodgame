@@ -1,0 +1,31 @@
+{
+  "id": "ramis",
+  "name": "Ramis",
+  "role": "npc",
+  "entity_type": "ENT_NPC",
+
+  "appearance": {
+    "summary": "A nervous, bookish man in a lab coat over a wrinkled button-down. Glasses slightly askew. Pockets full of USB drives and screwdrivers. Looks like he hasn't slept in two days and just realized something terrible.",
+    "build": "thin, hunched",
+    "hair": "messy, dark",
+    "skin_tone": "light",
+    "outfit": "lab coat, button-down shirt, cargo pants",
+    "age_range": "late 30s",
+    "height": "average"
+  },
+
+  "personality": {
+    "summary": "DFWTF's tech specialist. Built R.A.D. (Robotic Assistant Droid, $50k) and then promptly lost it. Well-meaning but disaster-prone. The kind of guy who solves one problem and creates three more.",
+    "traits": ["anxious", "apologetic", "smart but careless", "well-meaning"],
+    "speech_style": "Starts sentences with 'So...' and trails off. Lots of qualifiers and hedging. 'I may have lost R.A.D. Please don't tell the chief.'",
+    "quirks": ["pushes glasses up nervously", "speaks in technical jargon then has to simplify", "keeps saying 'be heroes' like it helps"]
+  },
+
+  "sprite": {
+    "base_tile": "SPR_GENERIC_BASE"
+  },
+
+  "dialogue_id": "DLG_RAMIS_CAR",
+  "direction": "DIR_RIGHT",
+  "behavior": 0
+}
