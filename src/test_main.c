@@ -460,6 +460,124 @@ static void test_select_swap_roundtrip(void) {
     record_result(active_player == second, "reg_swap: third SELECT works too");
 }
 
+// Regression: inactive entities must not hide active player sprites
+static void test_sprite_visibility_after_draw(void) {
+    // Boot game
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+
+    // Run a draw cycle
+    game_draw();
+
+    // Active player's sprite must not be hidden
+    Entity *p = &entities[active_player];
+    u16 attr0 = obj_buffer[p->sprite_id].attr0;
+    int hidden = (attr0 & 0x0300) == ATTR0_HIDE;
+    record_result(!hidden, "reg_vis: active player sprite not hidden after draw");
+
+    // Both player sprites must be visible
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        if (!entities[i].active) continue;
+        if (entities[i].type == ENT_PLAYER_TREVOR) {
+            u16 a0 = obj_buffer[entities[i].sprite_id].attr0;
+            record_result((a0 & 0x0300) != ATTR0_HIDE,
+                          "reg_vis: Trevor sprite visible after draw");
+        }
+        if (entities[i].type == ENT_PLAYER_KIP) {
+            u16 a0 = obj_buffer[entities[i].sprite_id].attr0;
+            record_result((a0 & 0x0300) != ATTR0_HIDE,
+                          "reg_vis: Kip sprite visible after draw");
+        }
+    }
+}
+
+// Regression: sprites must visually move when arrow keys are held
+static void test_sprite_position_updates(void) {
+    // Boot game
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+
+    Entity *p = &entities[active_player];
+    p->x = 40;
+    p->y = 56;
+
+    // Draw to get initial sprite screen position
+    game_draw();
+    int initial_sx = obj_buffer[p->sprite_id].attr1 & 0x1FF;
+
+    // Move right for several frames
+    for (int i = 0; i < 10; i++) {
+        sim_key(KEY_RIGHT);
+        game_update();
+        game_draw();
+    }
+    sim_no_key();
+
+    // Sprite screen position must have changed
+    int final_sx = obj_buffer[p->sprite_id].attr1 & 0x1FF;
+    record_result(final_sx != initial_sx,
+                  "reg_vis: sprite screen X changes when moving");
+
+    // And sprite must still be visible
+    u16 attr0 = obj_buffer[p->sprite_id].attr0;
+    record_result((attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_vis: sprite still visible after moving");
+}
+
+// Regression: SELECT swap must keep both characters' sprites visible
+static void test_select_swap_visibility(void) {
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+
+    // Draw initial state
+    game_draw();
+
+    // Find both player entity indices
+    int trevor_id = -1, kip_id = -1;
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        if (entities[i].active && entities[i].type == ENT_PLAYER_TREVOR) trevor_id = i;
+        if (entities[i].active && entities[i].type == ENT_PLAYER_KIP) kip_id = i;
+    }
+
+    // Both must be visible initially
+    record_result((obj_buffer[entities[trevor_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Trevor visible before swap");
+    record_result((obj_buffer[entities[kip_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Kip visible before swap");
+
+    // Swap to other character
+    sim_key(KEY_SELECT);
+    game_update();
+    game_draw();
+    sim_no_key();
+
+    record_result((obj_buffer[entities[trevor_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Trevor visible after swap");
+    record_result((obj_buffer[entities[kip_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Kip visible after swap");
+
+    // Swap back
+    game_update();
+    sim_key(KEY_SELECT);
+    game_update();
+    game_draw();
+    sim_no_key();
+
+    record_result((obj_buffer[entities[trevor_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Trevor visible after swap back");
+    record_result((obj_buffer[entities[kip_id].sprite_id].attr0 & 0x0300) != ATTR0_HIDE,
+                  "reg_swap_vis: Kip visible after swap back");
+}
+
 // ============================================================================
 // TEST RUNNER
 // ============================================================================
@@ -531,6 +649,9 @@ int main(void) {
     test_spawn_walkable();
     test_start_menu_toggle();
     test_select_swap_roundtrip();
+    test_sprite_visibility_after_draw();
+    test_sprite_position_updates();
+    test_select_swap_visibility();
 
     // --- Report results ---
     mgba_log(MGBA_LOG_INFO, "=== Test Results ===");

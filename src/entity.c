@@ -12,6 +12,7 @@ void entity_init(void) {
     for (int i = 0; i < MAX_ENTITIES; i++) {
         entities[i].type = ENT_NONE;
         entities[i].active = 0;
+        entities[i].sprite_id = (u16)i;
     }
 }
 
