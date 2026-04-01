@@ -8,12 +8,7 @@
 #include "dialogue.h"
 #include "gen_maps.h"
 #include "gen_dialogue.h"
-
-// --- Tileset (flat array for DMA copy to VRAM charblock) ---
-#define TILESET_URBAN_TILES  64
-#define TILESET_URBAN_SIZE   (TILESET_URBAN_TILES * 32)
-extern const u32 tileset_urban[TILESET_URBAN_TILES * 8];
-extern const u16 tileset_urban_pal[16];
+#include "gen_tileset.h"
 
 // --- Character Sprites ---
 #define SPR_TILES_PER_CHAR  32
