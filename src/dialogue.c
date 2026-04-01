@@ -417,9 +417,19 @@ void text_init(void) {
     dest[76]=0x44444442; dest[77]=0x44444442; dest[78]=0x44444442; dest[79]=0x22222222;
 
     // Load ASCII font (tiles 32..126 in charblock)
+    // Replace transparent (index 0) with blue background (index 4)
+    // so the text box is opaque
     u32 *font_dest = dest + (32 * 8);
-    for (int i = 0; i < FONT_NUM_TILES * 8; i++)
-        font_dest[i] = font_4bpp[i];
+    for (int i = 0; i < FONT_NUM_TILES * 8; i++) {
+        u32 word = font_4bpp[i];
+        u32 out = 0;
+        for (int p = 0; p < 8; p++) {
+            u32 idx = (word >> (p * 4)) & 0xF;
+            if (idx == 0) idx = 4;  // transparent -> blue bg
+            out |= idx << (p * 4);
+        }
+        font_dest[i] = out;
+    }
 
     // Palette 15 for text/UI — FF-style blue gradient
     u16 *pal = (u16*)(MEM_PAL_BG + 15 * 32);
