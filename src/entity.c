@@ -4,6 +4,8 @@
 #include "map.h"
 #include "sprite.h"
 #include "dialogue.h"
+#include "combat.h"
+#include "game_data.h"
 
 Entity entities[MAX_ENTITIES];
 int active_player = 0;
@@ -211,4 +213,65 @@ int entity_at(int px, int py, int range) {
         }
     }
     return -1;
+}
+
+static int indicator_timer = 0;
+
+void indicator_update(void) {
+    indicator_timer++;
+
+    // Hide during dialogue or combat
+    if (dialogue_active() || combat_active()) {
+        sprite_hide(INDICATOR_OAM_SLOT);
+        return;
+    }
+
+    Entity *player = &entities[active_player];
+    if (!player->active) {
+        sprite_hide(INDICATOR_OAM_SLOT);
+        return;
+    }
+
+    int px = player->x + 8;  // Player center
+    int py = player->y + 8;
+
+    // Find nearest NPC with dialogue within 32px Manhattan distance
+    int best = -1;
+    int best_dist = 65;
+    for (int i = 0; i < MAX_ENTITIES; i++) {
+        Entity *e = &entities[i];
+        if (!e->active || e->type != ENT_NPC || e->dialogue_id == 0)
+            continue;
+        int dx = px - (e->x + 8);
+        int dy = py - (e->y + 8);
+        if (dx < 0) dx = -dx;
+        if (dy < 0) dy = -dy;
+        int dist = dx + dy;
+        if (dist <= 32 && dist < best_dist) {
+            best_dist = dist;
+            best = i;
+        }
+    }
+
+    if (best < 0) {
+        sprite_hide(INDICATOR_OAM_SLOT);
+        return;
+    }
+
+    Entity *npc = &entities[best];
+    int sx = npc->x - (int)camera_x + 4;
+    int sy = npc->y - (int)camera_y - 10;
+
+    // Gentle 1px bounce every 8 frames
+    if ((indicator_timer / 8) % 2 == 0)
+        sy -= 1;
+
+    // Hide if off-screen
+    if (sx < -8 || sx > 240 || sy < -8 || sy > 160) {
+        sprite_hide(INDICATOR_OAM_SLOT);
+        return;
+    }
+
+    sprite_show(INDICATOR_OAM_SLOT);
+    sprite_set_pos(INDICATOR_OAM_SLOT, sx, sy);
 }

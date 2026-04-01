@@ -53,4 +53,9 @@ extern const u16 spr_pal_characters[16];
 #define SPR_RUBIK_BASE    64
 #define SPR_GENERIC_BASE  96
 
+// --- Interaction Indicator Sprite ---
+extern const u32 spr_a_indicator[8];
+#define SPR_INDICATOR_TILE  128
+#define INDICATOR_OAM_SLOT  32
+
 #endif // GAME_DATA_H

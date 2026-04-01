@@ -53,6 +53,12 @@ static void setup_chapter_1(void) {
     sprite_load_tiles(spr_npc_generic, SPR_GENERIC_BASE, SPR_BYTES_PER_CHAR);
     sprite_load_palette(spr_pal_characters, 0, 16);
 
+    // Load interaction indicator sprite
+    sprite_load_tiles(spr_a_indicator, SPR_INDICATOR_TILE, 32);
+    sprite_set_size(INDICATOR_OAM_SLOT, ATTR0_SQUARE, ATTR1_SIZE_8);
+    sprite_set_tile(INDICATOR_OAM_SLOT, SPR_INDICATOR_TILE, 0);
+    sprite_hide(INDICATOR_OAM_SLOT);
+
     // Load starting map (DFWTF HQ)
     map_load(&map_dfwtf_hq);
 
@@ -223,6 +229,7 @@ void game_draw(void) {
     case STATE_EXPLORE:
         map_apply_scroll();
         entity_draw_all();
+        indicator_update();
         sprite_update_oam();
 
         if (dialogue_active()) {
@@ -237,6 +244,7 @@ void game_draw(void) {
         // Keep rendering the game world behind the menu
         map_apply_scroll();
         entity_draw_all();
+        indicator_update();
         // TODO: draw menu UI overlay here
         sprite_update_oam();
         break;

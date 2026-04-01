@@ -80,4 +80,7 @@ int entity_at(int px, int py, int range);
 // Player-specific update (reads input)
 void player_update(void);
 
+// Update the (A) interaction indicator above nearby NPCs
+void indicator_update(void);
+
 #endif // ENTITY_H

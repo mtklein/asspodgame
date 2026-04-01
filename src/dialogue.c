@@ -19,7 +19,9 @@
 #define NAME_X      2
 #define NAME_Y      15
 
-#define PRINT_SPEED 2   // Frames per character
+#define PRINT_SPEED    2   // Frames per character
+#define LINES_PER_PAGE 3
+#define MAX_PAGES      16
 
 DialogueState dlg_state = DLG_INACTIVE;
 
@@ -28,6 +30,10 @@ static u16 current_node;
 static int char_index;
 static int print_timer;
 static int choice_cursor;
+static int current_page;
+static int page_char_counts[MAX_PAGES];
+static int num_pages;
+static int blink_timer;
 
 static const DialogueTree* get_tree(void) {
     if (current_tree_id < NUM_DIALOGUE_TREES)
@@ -48,12 +54,74 @@ static int str_len(const char *s) {
     return n;
 }
 
+static int word_len(const char *s) {
+    int n = 0;
+    while (s[n] && s[n] != ' ' && s[n] != '\n') n++;
+    return n;
+}
+
+static void compute_pages(const char *text) {
+    num_pages = 0;
+    if (!text || !*text) {
+        num_pages = 1;
+        page_char_counts[0] = 0;
+        return;
+    }
+
+    const char *p = text;
+    int count = 0;
+
+    while (*p && num_pages < MAX_PAGES) {
+        int cx = 0;
+        int lines = 0;
+        int page_start = count;
+
+        while (*p && lines < LINES_PER_PAGE) {
+            if (*p == '\n') {
+                p++; count++;
+                cx = 0;
+                lines++;
+                continue;
+            }
+
+            if (*p == ' ' && cx > 0) {
+                int wl = word_len(p + 1);
+                if (cx + 1 + wl > TEXT_W && wl <= TEXT_W) {
+                    p++; count++;
+                    cx = 0;
+                    lines++;
+                    continue;
+                }
+            }
+
+            if (cx >= TEXT_W) {
+                cx = 0;
+                lines++;
+                if (lines >= LINES_PER_PAGE) break;
+            }
+
+            p++; count++;
+            cx++;
+        }
+
+        page_char_counts[num_pages] = count - page_start;
+        num_pages++;
+    }
+
+    if (num_pages == 0) {
+        num_pages = 1;
+        page_char_counts[0] = 0;
+    }
+}
+
 void dialogue_start(u16 tree_id) {
     current_tree_id = tree_id;
     current_node = 0;
     char_index = 0;
     print_timer = 0;
     choice_cursor = 0;
+    current_page = 0;
+    blink_timer = 0;
     dlg_state = DLG_PRINTING;
 
     // Enable BG2 for text overlay
@@ -78,6 +146,18 @@ void dialogue_start(u16 tree_id) {
             sbb[y * 32 + x] = SE_TILE(tile) | SE_PALBANK(15);
         }
     }
+
+    const DialogueNode *node = get_node();
+    if (node) compute_pages(node->text);
+}
+
+static void reset_for_node(void) {
+    char_index = 0;
+    print_timer = 0;
+    current_page = 0;
+    blink_timer = 0;
+    const DialogueNode *node = get_node();
+    if (node) compute_pages(node->text);
 }
 
 void dialogue_update(void) {
@@ -92,21 +172,40 @@ void dialogue_update(void) {
 
     switch (dlg_state) {
     case DLG_PRINTING: {
+        int speed = key_held(KEY_B) ? 0 : PRINT_SPEED;
         print_timer++;
-        if (print_timer >= PRINT_SPEED) {
+        if (print_timer >= speed) {
             print_timer = 0;
             char_index++;
         }
-        int len = str_len(node->text);
-        if (char_index >= len)
-            dlg_state = (node->num_choices > 0) ? DLG_CHOOSING : DLG_WAITING;
-
-        if (key_hit(KEY_A) || key_hit(KEY_B)) {
-            char_index = len;
-            dlg_state = (node->num_choices > 0) ? DLG_CHOOSING : DLG_WAITING;
+        int page_len = page_char_counts[current_page];
+        if (char_index >= page_len) {
+            char_index = page_len;
+            if (current_page < num_pages - 1)
+                dlg_state = DLG_PAGING;
+            else
+                dlg_state = (node->num_choices > 0) ? DLG_CHOOSING : DLG_WAITING;
+        }
+        if (key_hit(KEY_A)) {
+            char_index = page_len;
+            if (current_page < num_pages - 1)
+                dlg_state = DLG_PAGING;
+            else
+                dlg_state = (node->num_choices > 0) ? DLG_CHOOSING : DLG_WAITING;
         }
         break;
     }
+    case DLG_PAGING:
+        blink_timer++;
+        if (key_hit(KEY_A)) {
+            current_page++;
+            char_index = 0;
+            print_timer = 0;
+            blink_timer = 0;
+            dlg_state = DLG_PRINTING;
+        }
+        break;
+
     case DLG_WAITING:
         if (key_hit(KEY_A)) {
             if (node->next == 0xFFFF) {
@@ -114,8 +213,7 @@ void dialogue_update(void) {
                 REG_DISPCNT &= ~DCNT_BG2;
             } else {
                 current_node = node->next;
-                char_index = 0;
-                print_timer = 0;
+                reset_for_node();
                 dlg_state = DLG_PRINTING;
             }
         }
@@ -141,9 +239,8 @@ void dialogue_update(void) {
                 REG_DISPCNT &= ~DCNT_BG2;
             } else {
                 current_node = ch->next_node;
-                char_index = 0;
-                print_timer = 0;
                 choice_cursor = 0;
+                reset_for_node();
                 dlg_state = DLG_PRINTING;
             }
         }
@@ -154,42 +251,86 @@ void dialogue_update(void) {
     }
 }
 
+static const char* skip_pages(const char *text, int pages) {
+    const char *p = text;
+    for (int pg = 0; pg < pages; pg++) {
+        int cx = 0;
+        int lines = 0;
+        int chars = page_char_counts[pg];
+        int count = 0;
+
+        while (*p && count < chars) {
+            if (*p == '\n') {
+                p++; count++;
+                cx = 0; lines++;
+                continue;
+            }
+            if (*p == ' ' && cx > 0) {
+                int wl = word_len(p + 1);
+                if (cx + 1 + wl > TEXT_W && wl <= TEXT_W) {
+                    p++; count++;
+                    cx = 0; lines++;
+                    continue;
+                }
+            }
+            if (cx >= TEXT_W) {
+                cx = 0; lines++;
+            }
+            p++; count++; cx++;
+        }
+    }
+    return p;
+}
+
 void dialogue_draw(void) {
     if (dlg_state == DLG_INACTIVE) return;
 
     const DialogueNode *node = get_node();
     if (!node) return;
 
-    // Clear text areas
-    text_clear_region(DLG_SBB, TEXT_X, TEXT_Y, TEXT_W, 3);
+    text_clear_region(DLG_SBB, TEXT_X, TEXT_Y, TEXT_W, LINES_PER_PAGE);
     text_clear_region(DLG_SBB, NAME_X, NAME_Y, 12, 1);
 
-    // Speaker name
     if (node->speaker)
         text_draw_string(node->speaker, DLG_SBB, NAME_X, NAME_Y, 12);
 
-    // Dialogue text (character-by-character reveal)
     if (node->text && dlg_state != DLG_CHOOSING) {
         u16 *sbb = (u16*)SBB_ADDR(DLG_SBB);
-        int cx = TEXT_X, cy = TEXT_Y, count = 0;
-        const char *p = node->text;
+        const char *p = skip_pages(node->text, current_page);
+        int cx = 0, cy = 0, count = 0;
 
         while (*p && count < char_index) {
-            if (*p == '\n' || cx >= TEXT_X + TEXT_W) {
-                cx = TEXT_X;
-                cy++;
-                if (*p == '\n') { p++; count++; continue; }
+            if (*p == '\n') {
+                p++; count++;
+                cx = 0; cy++;
+                continue;
             }
-            if (cy >= TEXT_Y + 3) break;
+            if (*p == ' ' && cx > 0) {
+                int wl = word_len(p + 1);
+                if (cx + 1 + wl > TEXT_W && wl <= TEXT_W) {
+                    p++; count++;
+                    cx = 0; cy++;
+                    continue;
+                }
+            }
+            if (cx >= TEXT_W) {
+                cx = 0; cy++;
+            }
+            if (cy >= LINES_PER_PAGE) break;
 
             int tile_idx = 32 + (*p - ' ');
             if (*p < ' ' || *p > '~') tile_idx = 32;
-            sbb[cy * 32 + cx] = SE_TILE(tile_idx) | SE_PALBANK(15);
+            sbb[(TEXT_Y + cy) * 32 + (TEXT_X + cx)] = SE_TILE(tile_idx) | SE_PALBANK(15);
             cx++; p++; count++;
+        }
+
+        if (dlg_state == DLG_PAGING && (blink_timer / 16) % 2 == 0) {
+            int vx = TEXT_X + TEXT_W - 1;
+            int vy = TEXT_Y + LINES_PER_PAGE - 1;
+            sbb[vy * 32 + vx] = SE_TILE(32 + ('v' - ' ')) | SE_PALBANK(15);
         }
     }
 
-    // Draw choices
     if (dlg_state == DLG_CHOOSING && node->num_choices > 0) {
         u16 *sbb = (u16*)SBB_ADDR(DLG_SBB);
         for (int i = 0; i < node->num_choices && i < MAX_CHOICES; i++) {

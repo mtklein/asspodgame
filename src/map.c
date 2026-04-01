@@ -66,7 +66,8 @@ void map_apply_scroll(void) {
 }
 
 int map_is_walkable(int px, int py) {
-    return map_get_collision(px, py) == 0;
+    u8 col = map_get_collision(px, py);
+    return col == 0 || col >= 10;
 }
 
 u8 map_get_collision(int px, int py) {

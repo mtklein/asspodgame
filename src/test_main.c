@@ -135,6 +135,25 @@ static void test_map_transition_trigger(void) {
     // Tile (27,14) has collision value 10 (map transition)
     u8 col = map_get_collision(27 * 8 + 4, 14 * 8 + 4);
     record_result(col == 10, "map_collision: transition trigger value 10");
+    // Transition tiles must be walkable so players can reach them
+    record_result(map_is_walkable(27 * 8 + 4, 14 * 8 + 4),
+                  "map_collision: transition tile is walkable");
+}
+
+static void test_passage_widths(void) {
+    map_load(&map_dfwtf_hq);
+    // HQ room A aisle (cols 3-4, row 2) must both be walkable
+    record_result(map_is_walkable(3*8+4, 2*8+4), "passage: HQ room A col 3 walkable");
+    record_result(map_is_walkable(4*8+4, 2*8+4), "passage: HQ room A col 4 walkable");
+    // HQ exit must be 3 tiles wide (cols 26-28, row 14)
+    record_result(map_is_walkable(26*8+4, 14*8+4), "passage: HQ exit col 26 walkable");
+    record_result(map_is_walkable(27*8+4, 14*8+4), "passage: HQ exit col 27 walkable");
+    record_result(map_is_walkable(28*8+4, 14*8+4), "passage: HQ exit col 28 walkable");
+
+    map_load(&map_taco_bongo);
+    // Taco table aisles (cols 3-4) must be walkable
+    record_result(map_is_walkable(3*8+4, 2*8+4), "passage: taco aisle col 3 walkable");
+    record_result(map_is_walkable(4*8+4, 2*8+4), "passage: taco aisle col 4 walkable");
 }
 
 static void test_camera_clamp(void) {
@@ -628,6 +647,7 @@ int main(void) {
     test_map_load();
     test_map_collision();
     test_map_transition_trigger();
+    test_passage_widths();
     test_camera_clamp();
     test_entity_move_walkable();
     test_entity_move_blocked();

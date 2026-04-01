@@ -33,6 +33,7 @@ typedef struct {
 typedef enum {
     DLG_INACTIVE = 0,
     DLG_PRINTING,    // Text appearing character by character
+    DLG_PAGING,      // Page done, more pages remain, waiting for A
     DLG_WAITING,     // Full text shown, waiting for A
     DLG_CHOOSING,    // Player selecting a choice
 } DialogueState;
