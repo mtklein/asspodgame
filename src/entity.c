@@ -177,6 +177,7 @@ void entity_update_all(void) {
 }
 
 void entity_draw_all(void) {
+    int dlg = dialogue_active();
     for (int i = 0; i < MAX_ENTITIES; i++) {
         Entity *e = &entities[i];
         if (!e->active || e->type == ENT_TRIGGER) {
@@ -194,6 +195,13 @@ void entity_draw_all(void) {
         } else {
             sprite_show(e->sprite_id);
             sprite_set_pos(e->sprite_id, sx, sy);
+        }
+
+        // During dialogue, push entity sprites to lower priority
+        // so the portrait sprite (priority 0) draws on top
+        if (dlg) {
+            obj_buffer[e->sprite_id].attr2 =
+                (u16)((obj_buffer[e->sprite_id].attr2 & ~0x0C00) | ATTR2_PRIO(2));
         }
     }
 }
