@@ -2,7 +2,7 @@
 // Writes the Nintendo logo, game title, and corrects the header checksum
 // so the ROM boots on real hardware (and picky emulators).
 //
-// Usage: gbafix romfile.gba
+// Usage: gbafix input.gba output.gba
 //
 // This is a stripped-down reimplementation. The original gbafix is part
 // of devkitPro but we bundle this so the project builds with just
@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 // The Nintendo logo bitmap that must appear at offset 0x04-0x9F
@@ -38,30 +39,31 @@ static const char game_code[4]   = "ASSG";
 static const char maker_code[2]  = "HB";
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <romfile.gba>\n", argv[0]);
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <input.gba> <output.gba>\n", argv[0]);
         return 1;
     }
 
-    FILE *f = fopen(argv[1], "r+b");
-    if (!f) {
-        perror("Cannot open ROM file");
+    FILE *fin = fopen(argv[1], "rb");
+    if (!fin) {
+        perror("Cannot open input ROM");
         return 1;
     }
 
-    // Get file size
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
+    // Read entire input file.
+    fseek(fin, 0, SEEK_END);
+    long size = ftell(fin);
     if (size < 192) {
         fprintf(stderr, "ROM too small (need at least 192 bytes for header)\n");
-        fclose(f);
+        fclose(fin);
         return 1;
     }
+    uint8_t *rom = malloc(size);
+    fseek(fin, 0, SEEK_SET);
+    fread(rom, 1, size, fin);
+    fclose(fin);
 
-    // Read the header
-    uint8_t header[192];
-    fseek(f, 0, SEEK_SET);
-    fread(header, 1, 192, f);
+    uint8_t *header = rom;
 
     // Write Nintendo logo at offset 0x04
     memcpy(header + 0x04, nintendo_logo, 156);
@@ -103,11 +105,17 @@ int main(int argc, char *argv[]) {
     header[0xBE] = 0x00;
     header[0xBF] = 0x00;
 
-    // Write the fixed header back
-    fseek(f, 0, SEEK_SET);
-    fwrite(header, 1, 192, f);
-    fclose(f);
+    // Write the fixed ROM to output.
+    FILE *fout = fopen(argv[2], "wb");
+    if (!fout) {
+        perror("Cannot open output ROM");
+        free(rom);
+        return 1;
+    }
+    fwrite(rom, 1, size, fout);
+    fclose(fout);
+    free(rom);
 
-    printf("gbafix: %s — header fixed (checksum=0x%02X)\n", argv[1], checksum);
+    printf("gbafix: %s — header fixed (checksum=0x%02X)\n", argv[2], checksum);
     return 0;
 }

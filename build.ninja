@@ -1,4 +1,4 @@
-builddir = build
+builddir = out
 
 rule cc
   command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -Wall -Wextra -Wno-unused-parameter -Iinclude -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
@@ -18,17 +18,24 @@ rule elf2bin
   description = ELF2BIN $out
 
 rule gbafix
-  command = cp $in $out && $builddir/gbafix $out
+  command = $builddir/gbafix $in $out
   description = GBAFIX $out
 
 rule hostcc
   command = cc -O2 -o $out $in
   description = HOSTCC $in
 
+rule hostcc_mgba
+  command = cc -O2 -I/opt/homebrew/include -L/opt/homebrew/lib -lmgba -o $out $in
+  description = HOSTCC $in
+
 rule run_tests
-  command = python3 tools/run_tests.py $in
+  command = $builddir/run_tests $in > $out
   description = TEST $in
-  pool = console
+
+rule symlink
+  command = ln -sf $in $out
+  description = SYMLINK $out
 
 rule run_emu
   command = open -a mGBA $in
@@ -37,6 +44,7 @@ rule run_emu
 
 # Host tools
 build $builddir/gbafix: hostcc tools/gbafix.c
+build $builddir/run_tests: hostcc_mgba tools/run_tests.c
 
 # Shared objects (used by both game and test ROMs)
 build $builddir/combat.o: cc src/combat.c
@@ -57,18 +65,21 @@ build $builddir/test_main.o: cc src/test_main.c
 
 # Game ROM
 build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
-build ass_game.raw.gba: elf2bin $builddir/ass_game.elf
-build ass_game.gba: gbafix ass_game.raw.gba | $builddir/gbafix
+build $builddir/ass_game.raw.gba: elf2bin $builddir/ass_game.elf
+build $builddir/ass_game.gba: gbafix $builddir/ass_game.raw.gba | $builddir/gbafix
 
 # Test ROM
 build $builddir/ass_game_test.elf: link $builddir/test_main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
-build ass_game_test.raw.gba: elf2bin $builddir/ass_game_test.elf
-build ass_game_test.gba: gbafix ass_game_test.raw.gba | $builddir/gbafix
+build $builddir/ass_game_test.raw.gba: elf2bin $builddir/ass_game_test.elf
+build $builddir/ass_game_test.gba: gbafix $builddir/ass_game_test.raw.gba | $builddir/gbafix
 
 # Test runner
-build test: run_tests ass_game_test.gba
+build $builddir/test.log: run_tests $builddir/ass_game_test.gba | $builddir/run_tests
+
+# Symlink for convenience
+build ass_game.gba: symlink $builddir/ass_game.gba
 
 # Run in emulator
 build run: run_emu ass_game.gba
 
-default ass_game.gba test
+default ass_game.gba $builddir/test.log
