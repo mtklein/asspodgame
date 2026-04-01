@@ -43,14 +43,14 @@ static void title_draw(void) {
 static void setup_chapter_1(void) {
     // Load tileset
     map_load_tileset(tileset_urban, TILESET_URBAN_SIZE, 0);
-    map_load_palette(tileset_urban_pal, TILESET_URBAN_COLORS);
+    map_load_palette(tileset_urban_pal, 16);
 
     // Load character sprites
-    sprite_load_tiles(spr_trevor, SPR_TREVOR_BASE, 64 * 32);
-    sprite_load_tiles(spr_kip, SPR_KIP_BASE, 64 * 32);
-    sprite_load_tiles(spr_npc_rubik, SPR_RUBIK_BASE, 64 * 32);
-    sprite_load_tiles(spr_npc_generic, SPR_GENERIC_BASE, 64 * 32);
-    sprite_load_palette(spr_pal_characters, 0, SPR_PAL_CHARS_COLORS);
+    sprite_load_tiles(spr_trevor, SPR_TREVOR_BASE, SPR_BYTES_PER_CHAR);
+    sprite_load_tiles(spr_kip, SPR_KIP_BASE, SPR_BYTES_PER_CHAR);
+    sprite_load_tiles(spr_npc_rubik, SPR_RUBIK_BASE, SPR_BYTES_PER_CHAR);
+    sprite_load_tiles(spr_npc_generic, SPR_GENERIC_BASE, SPR_BYTES_PER_CHAR);
+    sprite_load_palette(spr_pal_characters, 0, 16);
 
     // Load starting map (DFWTF HQ)
     map_load(&map_dfwtf_hq);

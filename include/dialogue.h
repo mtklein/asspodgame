@@ -5,30 +5,28 @@
 
 #include "gba.h"
 
+#define MAX_CHOICES 3
+
+// A choice within a dialogue node
+typedef struct {
+    const char *text;       // Choice text (NULL = unused slot)
+    u16 next_node;          // Where this choice leads (0 = end)
+    s8 fate_reward;         // Fate points gained (funny/in-character choices)
+} DialogueChoice;
+
 // A single dialogue node
 typedef struct {
     const char *speaker;    // Speaker name (shown in name plate)
     const char *text;       // Dialogue text (auto-wrapped)
-    u8 portrait_id;         // Portrait graphic index
     u8 num_choices;         // 0 = press A to continue, 1-3 = choices
-    u16 next;               // Next node if no choices (0 = end)
+    u16 next;               // Next node if no choices (0xFFFF = end)
+    DialogueChoice choices[MAX_CHOICES];
 } DialogueNode;
 
-// A choice within a dialogue
-typedef struct {
-    const char *text;       // Choice text
-    u16 next_node;          // Where this choice leads
-    s8 fate_reward;         // Fate points gained (funny/in-character choices)
-    u8 stat_check;          // 0=none, 1=SHOOT, 2=BRAWN, 3=BRAINS, 4=TALK, 5=COOL
-    s8 stat_dc;             // Difficulty to pass the check
-} DialogueChoice;
-
-// Dialogue tree = array of nodes + parallel array of choices
+// Dialogue tree = array of nodes
 typedef struct {
     const DialogueNode *nodes;
     int num_nodes;
-    const DialogueChoice *choices;  // Flat array, indexed by node
-    const u8 *choice_offsets;       // choices[choice_offsets[node_id]..] for each node
 } DialogueTree;
 
 // Dialogue state
@@ -56,13 +54,8 @@ static inline int dialogue_active(void) {
 }
 
 // --- Text rendering ---
-// Load the font tileset into a BG charblock
 void text_init(void);
-
-// Draw a string to a screenblock position
 void text_draw_string(const char *str, int sbb, int x, int y, int max_width);
-
-// Clear a rectangular region of a screenblock
 void text_clear_region(int sbb, int x, int y, int w, int h);
 
 #endif // DIALOGUE_H

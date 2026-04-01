@@ -1,6 +1,5 @@
 // sprite.c — Sprite management implementation
 #include "sprite.h"
-#include <string.h>
 
 #define OBJ_VRAM_BASE 0x06010000
 

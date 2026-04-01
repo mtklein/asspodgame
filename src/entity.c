@@ -88,11 +88,11 @@ static void entity_animate(Entity *e) {
     e->anim_timer++;
     if (e->anim_timer >= 8) {
         e->anim_timer = 0;
-        e->anim_frame = (e->anim_frame + 1) % 4;
+        e->anim_frame = (e->anim_frame + 1) % 2; // 2 walk frames
     }
-    // 4 directions × 4 frames = 16 frames per character
-    // Each 16x16 sprite uses 4 tiles (2×2 in 4bpp)
-    int frame_tiles = e->base_tile + (e->dir * 4 + e->anim_frame) * 4;
+    // Layout: 4 directions × 2 frames × 4 tiles = 32 tiles per character
+    // Each 16x16 sprite = 4 tiles (2×2 in 4bpp)
+    int frame_tiles = e->base_tile + (e->dir * 2 + e->anim_frame) * 4;
     sprite_set_tile(e->sprite_id, frame_tiles, 0);
 }
 
@@ -120,7 +120,7 @@ void player_update(void) {
     } else {
         player->anim_frame = 0;
         player->anim_timer = 0;
-        int frame_tiles = player->base_tile + player->dir * 4 * 4;
+        int frame_tiles = player->base_tile + player->dir * 2 * 4;
         sprite_set_tile(player->sprite_id, frame_tiles, 0);
     }
 

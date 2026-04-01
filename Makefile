@@ -1,26 +1,30 @@
 # Makefile — Advanced Sagebrush & Shootouts: The Game
-# Targets GBA via arm-none-eabi toolchain
+# Targets GBA (ARM7TDMI) via Zig as a cross-compiler
 #
-# Setup (Homebrew, no tap needed):
-#   brew install arm-none-eabi-gcc arm-none-eabi-binutils
+# Setup:
+#   brew install zig          (macOS)
+#   pip install ziglang       (anywhere with Python)
 #
 # Optional (for emulator):
-#   brew install mgba
+#   brew install --cask mgba  (macOS)
 #
 # Usage:
 #   make          — Build the .gba ROM
 #   make clean    — Remove build artifacts
-#   make run      — Build and open in mGBA (if installed)
+#   make run      — Build and open in mGBA
 
-# --- Toolchain ---
-PREFIX  := arm-none-eabi-
-CC      := $(PREFIX)gcc
-AS      := $(PREFIX)as
-LD      := $(PREFIX)gcc
-OBJCOPY := $(PREFIX)objcopy
+# --- Toolchain (zig as a C cross-compiler) ---
+ZIG     ?= zig
+ZIGCC   := $(ZIG) cc
+OBJCOPY := $(ZIG) objcopy
+# Host compiler for tools
+HOSTCC  := cc
+
+# --- ARM7TDMI target flags ---
+TARGET  := -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft
 
 # --- Project ---
-TARGET  := ass_game
+ROM     := ass_game
 BUILD   := build
 
 SRCDIR  := src
@@ -34,52 +38,47 @@ OFILES  := $(patsubst $(SRCDIR)/%.c,$(BUILD)/%.o,$(CFILES)) \
            $(patsubst $(SRCDIR)/%.s,$(BUILD)/%.o,$(SFILES))
 
 # --- Flags ---
-ARCH    := -mthumb-interwork -mthumb
-CFLAGS  := -O2 -Wall -Wextra -Wno-unused-parameter \
-           -mcpu=arm7tdmi -mtune=arm7tdmi $(ARCH) \
+CFLAGS  := $(TARGET) -mthumb -O2 -Wall -Wextra -Wno-unused-parameter \
            -I$(INCDIR) -fno-strict-aliasing
-ASFLAGS := -mcpu=arm7tdmi -mthumb-interwork
-LDFLAGS := -T gba_cart.ld -nostartfiles $(ARCH) \
-           -Wl,-Map,$(BUILD)/$(TARGET).map \
-           -specs=nosys.specs
+ASFLAGS := $(TARGET)
+LDFLAGS := $(TARGET) -mthumb -T gba_cart.ld -nostartfiles
 
 # --- Rules ---
-.PHONY: all clean run gbafix
+.PHONY: all clean run font
 
-all: $(TARGET).gba
+all: $(ROM).gba
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
 # Build the gbafix tool from source (bundled, no external dep)
 $(BUILD)/gbafix: $(TOOLDIR)/gbafix.c | $(BUILD)
-	cc -O2 -o $@ $<
+	$(HOSTCC) -O2 -o $@ $<
 
 $(BUILD)/%.o: $(SRCDIR)/%.c | $(BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(ZIGCC) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/%.o: $(SRCDIR)/%.s | $(BUILD)
-	$(AS) $(ASFLAGS) $< -o $@
+	$(ZIGCC) $(ASFLAGS) -c $< -o $@
 
-$(BUILD)/$(TARGET).elf: $(OFILES)
-	$(LD) $(LDFLAGS) $^ -o $@
+$(BUILD)/$(ROM).elf: $(OFILES)
+	$(ZIGCC) $(LDFLAGS) $^ -o $@
 
-$(TARGET).gba: $(BUILD)/$(TARGET).elf $(BUILD)/gbafix
-	$(OBJCOPY) -O binary $< $@
+# Extract flat ROM binary from ELF (uses LMA, no external objcopy needed)
+$(ROM).gba: $(BUILD)/$(ROM).elf $(BUILD)/gbafix
+	python3 $(TOOLDIR)/elf2bin.py $< $@
 	$(BUILD)/gbafix $@
 
 clean:
-	rm -rf $(BUILD) $(TARGET).gba
+	rm -rf $(BUILD) $(ROM).gba
 
-run: $(TARGET).gba
-	open -a mGBA $(TARGET).gba
+run: $(ROM).gba
+	open -a mGBA $(ROM).gba
 
 # Regenerate font data from Python script
 font:
 	python3 $(TOOLDIR)/genfont.py > $(INCDIR)/font_data.h
 
-# --- Dependencies ---
-$(BUILD)/%.d: $(SRCDIR)/%.c | $(BUILD)
-	$(CC) $(CFLAGS) -MM -MT $(BUILD)/$*.o $< -MF $@
-
--include $(patsubst $(SRCDIR)/%.c,$(BUILD)/%.d,$(CFILES))
+# Regenerate sprite data from Python script
+sprites:
+	python3 $(TOOLDIR)/gensprites.py > $(SRCDIR)/sprite_data.c

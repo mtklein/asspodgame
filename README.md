@@ -10,16 +10,22 @@ Play as **Trevor Steel** (ex-FBI hotshot) and **Kip Simpkins** (head-banger in s
 
 ### Prerequisites
 
-Just the ARM cross-compiler from Homebrew (no tap needed):
+Just [Zig](https://ziglang.org/) — it acts as a C cross-compiler targeting ARM7TDMI out of the box.
 
 **macOS** (Homebrew):
 ```bash
-brew install arm-none-eabi-gcc arm-none-eabi-binutils
+brew bundle          # installs zig + mgba from Brewfile
 ```
 
-**Linux** (apt):
+**Or manually:**
 ```bash
-sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+brew install zig
+brew install --cask mgba
+```
+
+**Linux/anywhere with Python:**
+```bash
+pip install ziglang
 ```
 
 That's it — `gbafix` (the ROM header fixer) is bundled in `tools/` and built automatically by Make.
@@ -63,7 +69,8 @@ make run
 src/            C source files
   main.c        Entry point
   game.c        Game state machine
-  game_data.c   All content: maps, dialogue, sprites
+  game_data.c   All content: maps, dialogue, tilesets
+  sprite_data.c Auto-generated sprite tile data
   entity.c      Entity/NPC system
   dialogue.c    Text box and dialogue trees
   combat.c      Turn-based combat
@@ -72,9 +79,12 @@ src/            C source files
   input.c       Input with edge detection
   crt0.s        GBA startup assembly
 include/        Headers
-tools/          Asset generation scripts
+tools/          Build tools & asset generators
+  gbafix.c      ROM header fixer (built by Make)
   genfont.py    Pixel font generator
+  gensprites.py Sprite tile data generator
 gba_cart.ld     GBA linker script
-Makefile        Build system
+Makefile        Build system (uses zig cc)
+Brewfile        Homebrew dependencies
 DESIGN.md       Game design document
 ```
