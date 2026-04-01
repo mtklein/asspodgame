@@ -3,11 +3,38 @@
   "height": 32,
   "tilewidth": 8,
   "tileheight": 8,
-  "properties": {
-    "c_name": "map_dfw_streets",
-    "real_width": 32,
-    "real_height": 16
-  },
+  "properties": [
+    {
+      "name": "c_name",
+      "type": "string",
+      "value": "map_dfw_streets"
+    },
+    {
+      "name": "real_width",
+      "type": "int",
+      "value": 32
+    },
+    {
+      "name": "real_height",
+      "type": "int",
+      "value": 16
+    },
+    {
+      "name": "map_id",
+      "type": "string",
+      "value": "MAP_ID_STREETS"
+    },
+    {
+      "name": "map_index",
+      "type": "int",
+      "value": 1
+    },
+    {
+      "name": "short_name",
+      "type": "string",
+      "value": "streets"
+    }
+  ],
   "layers": [
     {
       "name": "fg",

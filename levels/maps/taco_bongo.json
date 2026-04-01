@@ -3,11 +3,38 @@
   "height": 32,
   "tilewidth": 8,
   "tileheight": 8,
-  "properties": {
-    "c_name": "map_taco_bongo",
-    "real_width": 20,
-    "real_height": 10
-  },
+  "properties": [
+    {
+      "name": "c_name",
+      "type": "string",
+      "value": "map_taco_bongo"
+    },
+    {
+      "name": "real_width",
+      "type": "int",
+      "value": 20
+    },
+    {
+      "name": "real_height",
+      "type": "int",
+      "value": 10
+    },
+    {
+      "name": "map_id",
+      "type": "string",
+      "value": "MAP_ID_TACO"
+    },
+    {
+      "name": "map_index",
+      "type": "int",
+      "value": 2
+    },
+    {
+      "name": "short_name",
+      "type": "string",
+      "value": "taco"
+    }
+  ],
   "layers": [
     {
       "name": "fg",
