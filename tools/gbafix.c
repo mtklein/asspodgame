@@ -116,6 +116,5 @@ int main(int argc, char *argv[]) {
     fclose(fout);
     free(rom);
 
-    printf("gbafix: %s — header fixed (checksum=0x%02X)\n", argv[2], checksum);
     return 0;
 }

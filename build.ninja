@@ -3,44 +3,25 @@ builddir = out
 rule cc
   command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -Wall -Wextra -Wno-unused-parameter -Iinclude -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
   depfile = $out.d
-  description = CC $in
 
 rule as
   command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -c $in -o $out
-  description = AS $in
-
 rule link
   command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -T gba_cart.ld -nostartfiles $in -o $out
-  description = LINK $out
-
 rule elf2bin
   command = python3 tools/elf2bin.py $in $out
-  description = ELF2BIN $out
-
 rule gbafix
   command = $builddir/gbafix $in $out
-  description = GBAFIX $out
-
 rule hostcc
   command = cc -O2 -o $out $in
-  description = HOSTCC $in
-
 rule hostcc_mgba
   command = cc -O2 -I/opt/homebrew/include -L/opt/homebrew/lib -lmgba -o $out $in
-  description = HOSTCC $in
-
 rule run_tests
   command = $builddir/run_tests $in > $out
-  description = TEST $in
-
 rule symlink
   command = ln -sf $in $out
-  description = SYMLINK $out
-
 rule run_emu
-  command = open -a mGBA $in
-  description = RUN $in
-  pool = console
+  command = open -a mGBA $in  pool = console
 
 # Host tools
 build $builddir/gbafix: hostcc tools/gbafix.c

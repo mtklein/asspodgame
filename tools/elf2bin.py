@@ -52,7 +52,7 @@ def elf2bin(elf_path, bin_path):
     with open(bin_path, "wb") as f:
         f.write(image)
 
-    print(f"elf2bin: {bin_path} — {len(image)} bytes (base 0x{base:08X})")
+    #print(f"elf2bin: {bin_path} — {len(image)} bytes (base 0x{base:08X})")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
