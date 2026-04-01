@@ -20,6 +20,8 @@ rule run_tests
   command = $builddir/run_tests $in > $out
 rule symlink
   command = ln -sf $in $out
+rule run_visual
+  command = out/screenshot ass_game.gba 60 0:start 10:none | python3 tools/ppm2png.py out/visual_tests/01_hq.png && out/screenshot ass_game.gba 100 0:start 10:none 35:right 51:none 53:up 62:none | python3 tools/ppm2png.py out/visual_tests/02_indicator.png && out/screenshot ass_game.gba 320 0:start 10:none 35:right 51:none 53:up 57:none 59:a 61:none | python3 tools/ppm2png.py out/visual_tests/03_dialogue.png && out/screenshot ass_game.gba 300 0:start 10:none 35:right 120:none 122:down 200:none | python3 tools/ppm2png.py out/visual_tests/04_scroll_south.png && python3 tools/visual_check.py out/visual_tests/ > $out
 rule run_emu
   command = open -a mGBA $in  pool = console
 rule bake_maps
@@ -73,6 +75,7 @@ build $builddir/ass_game_test.gba: gbafix $builddir/ass_game_test.raw.gba | $bui
 
 # Test runner
 build $builddir/test.log: run_tests $builddir/ass_game_test.gba | $builddir/run_tests
+build $builddir/visual_test.log: run_visual ass_game.gba | $builddir/screenshot
 
 # Symlink for convenience
 build ass_game.gba: symlink $builddir/ass_game.gba
@@ -80,4 +83,4 @@ build ass_game.gba: symlink $builddir/ass_game.gba
 # Run in emulator
 build run: run_emu ass_game.gba
 
-default ass_game.gba $builddir/test.log
+default ass_game.gba $builddir/test.log $builddir/visual_test.log
