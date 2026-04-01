@@ -8,6 +8,7 @@
 #include "combat.h"
 #include "game_data.h"
 #include "debug_input.h"
+#include "portrait_data.h"
 
 GameState game_state = STATE_TITLE;
 static int current_map_id = -1;
@@ -93,7 +94,10 @@ static void setup_chapter_1(void) {
     sprite_load_tiles(spr_a_indicator, SPR_INDICATOR_TILE, 32);
     sprite_set_size(INDICATOR_OAM_SLOT, ATTR0_SQUARE, ATTR1_SIZE_8);
     sprite_set_tile(INDICATOR_OAM_SLOT, SPR_INDICATOR_TILE, 0);
-    sprite_hide(INDICATOR_OAM_SLOT);
+    // Hide all non-entity, non-debug OAM slots to prevent stray sprites
+    for (int s = MAX_ENTITIES; s < 118; s++) {
+        sprite_hide(s);
+    }
 
     // Load starting map and spawn all entities (including players)
     current_map_id = MAP_ID_HQ;

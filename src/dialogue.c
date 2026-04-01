@@ -58,9 +58,9 @@ static void show_portrait(const char *speaker) {
     sprite_set_size(PORTRAIT_OAM_SLOT, ATTR0_SQUARE, ATTR1_SIZE_32);
     sprite_set_tile(PORTRAIT_OAM_SLOT, PORTRAIT_TILE_BASE, 0);
     sprite_show(PORTRAIT_OAM_SLOT);
-    // Position: NPC on left (x=4), PC on right (x=204)
-    int px = portrait_is_pc ? 204 : 4;
-    int py = 120 - 36;  // above the text box
+    // Position: NPC on left (x=8), PC on right (x=200), vertically above text box
+    int px = portrait_is_pc ? 200 : 8;
+    int py = 120 - 40;
     sprite_set_pos(PORTRAIT_OAM_SLOT, px, py);
 }
 
