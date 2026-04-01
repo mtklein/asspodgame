@@ -10,9 +10,43 @@
 #include "debug_input.h"
 
 GameState game_state = STATE_TITLE;
+int current_map_id = -1;
 
 static int transition_timer = 0;
 static int title_blink = 0;
+
+static const Map* map_by_id(int id) {
+    switch (id) {
+    case MAP_ID_HQ:      return &map_dfwtf_hq;
+    case MAP_ID_STREETS: return &map_dfw_streets;
+    case MAP_ID_TACO:    return &map_taco_bongo;
+    default:             return &map_dfwtf_hq;
+    }
+}
+
+static void spawn_entities(int map_id, int include_players) {
+    if (map_id < 0 || map_id >= MAP_NUM_MAPS) return;
+    const MapSpawnTable *st = &map_spawn_tables[map_id];
+    for (int i = 0; i < st->num_spawns; i++) {
+        const EntitySpawn *s = &st->spawns[i];
+        int is_player = (s->type == ENT_PLAYER_TREVOR || s->type == ENT_PLAYER_KIP);
+        if (is_player && !include_players) continue;
+        int id = entity_create((EntityType)s->type, s->x, s->y);
+        if (id < 0) continue;
+        entities[id].dir = (Direction)s->dir;
+        entities[id].base_tile = s->base_tile;
+        entities[id].walk_speed = s->walk_speed;
+        entities[id].dialogue_id = s->dialogue_id;
+        entities[id].npc_behavior = s->npc_behavior;
+        entities[id].stats = (Stats){
+            .shoot = s->shoot, .brawn = s->brawn, .brains = s->brains,
+            .talk = s->talk, .cool = s->cool,
+            .hp = s->hp, .hp_max = s->hp_max,
+            .fate_points = s->fate_points, .fate_max = s->fate_max
+        };
+        if (s->type == ENT_PLAYER_TREVOR) active_player = id;
+    }
+}
 
 // --- Title screen ---
 static void title_draw(void) {
@@ -59,67 +93,10 @@ static void setup_chapter_1(void) {
     sprite_set_tile(INDICATOR_OAM_SLOT, SPR_INDICATOR_TILE, 0);
     sprite_hide(INDICATOR_OAM_SLOT);
 
-    // Load starting map (DFWTF HQ)
-    map_load(&map_dfwtf_hq);
-
-    // Create player entities (spawn in the hallway — rows 7-8 are walkable)
-    int trevor = entity_create(ENT_PLAYER_TREVOR, 40, 56);
-    if (trevor >= 0) {
-        entities[trevor].base_tile = SPR_TREVOR_BASE;
-        entities[trevor].walk_speed = 2;
-        entities[trevor].stats = (Stats){
-            .shoot = 3, .brawn = 1, .brains = 1,
-            .talk = 3, .cool = 2,
-            .hp = 8, .hp_max = 8,
-            .fate_points = 3, .fate_max = 5
-        };
-        active_player = trevor;
-    }
-
-    int kip = entity_create(ENT_PLAYER_KIP, 56, 56);
-    if (kip >= 0) {
-        entities[kip].base_tile = SPR_KIP_BASE;
-        entities[kip].walk_speed = 2;
-        entities[kip].stats = (Stats){
-            .shoot = 1, .brawn = 3, .brains = 2,
-            .talk = 1, .cool = 3,
-            .hp = 10, .hp_max = 10,
-            .fate_points = 3, .fate_max = 5
-        };
-    }
-
-    // Create NPCs (all positions verified against collision map)
-    // Rubik: room at row 4, col 9-11 (walkable)
-    int rubik = entity_create(ENT_NPC, 72, 32);
-    if (rubik >= 0) {
-        entities[rubik].base_tile = SPR_RUBIK_BASE;
-        entities[rubik].dialogue_id = DLG_RUBIK_INTRO;
-        entities[rubik].dir = DIR_DOWN;
-    }
-
-    // Peacemaker: hallway row 7, col 18 (walkable)
-    int peacemaker = entity_create(ENT_NPC, 144, 56);
-    if (peacemaker >= 0) {
-        entities[peacemaker].base_tile = SPR_GENERIC_BASE;
-        entities[peacemaker].dialogue_id = DLG_PEACEMAKER_HINT;
-        entities[peacemaker].dir = DIR_LEFT;
-    }
-
-    // Ramis: room at row 12, col 1-3 (walkable)
-    int ramis = entity_create(ENT_NPC, 16, 96);
-    if (ramis >= 0) {
-        entities[ramis].base_tile = SPR_GENERIC_BASE;
-        entities[ramis].dialogue_id = DLG_RAMIS_CAR;
-        entities[ramis].dir = DIR_RIGHT;
-    }
-
-    // Random cop: hallway row 8, col 22 (walkable)
-    int cop1 = entity_create(ENT_NPC, 176, 64);
-    if (cop1 >= 0) {
-        entities[cop1].base_tile = SPR_GENERIC_BASE;
-        entities[cop1].dialogue_id = DLG_RANDOM_COP_1;
-        entities[cop1].npc_behavior = 1; // Wander
-    }
+    // Load starting map and spawn all entities (including players)
+    current_map_id = MAP_ID_HQ;
+    map_load(map_by_id(current_map_id));
+    spawn_entities(current_map_id, 1);
 }
 
 void game_init(void) {
@@ -182,17 +159,17 @@ void game_update(void) {
 
             // Check for map transition triggers
             u8 col = map_get_collision(p->x + 8, p->y + 8);
-            if (col >= 10) {
-                // Collision values 10+ are map transition triggers
-                switch (col) {
-                case 10: game_change_map(MAP_ID_STREETS, 128, 16); break;
-                case 11: game_change_map(MAP_ID_HQ, 128, 224); break;
-                case 12: game_change_map(MAP_ID_TACO, 80, 128); break;
+            if (col >= 10 && current_map_id >= 0 && current_map_id < MAP_NUM_MAPS) {
+                const MapTransitionTable *tt = &map_transition_tables[current_map_id];
+                for (int i = 0; i < tt->num_transitions; i++) {
+                    if (tt->transitions[i].collision_code == col) {
+                        game_change_map(tt->transitions[i].target_map_id,
+                                        tt->transitions[i].spawn_x,
+                                        tt->transitions[i].spawn_y);
+                        break;
+                    }
                 }
             }
-
-            // Check for random encounters on streets
-            // (simplified: collision value 3 = encounter zone)
         }
         break;
 
@@ -270,11 +247,8 @@ void game_change_map(int map_id, int spawn_x, int spawn_y) {
     }
 
     // Load new map
-    switch (map_id) {
-    case MAP_ID_HQ:      map_load(&map_dfwtf_hq); break;
-    case MAP_ID_STREETS:  map_load(&map_dfw_streets); break;
-    case MAP_ID_TACO:     map_load(&map_taco_bongo); break;
-    }
+    current_map_id = map_id;
+    map_load(map_by_id(map_id));
 
     // Move players to spawn point
     for (int i = 0; i < MAX_ENTITIES; i++) {
@@ -286,21 +260,6 @@ void game_change_map(int map_id, int spawn_x, int spawn_y) {
         }
     }
 
-    // Set up NPCs for this map
-    if (map_id == MAP_ID_TACO) {
-        int donny = entity_create(ENT_NPC, 64, 48);
-        if (donny >= 0) {
-            entities[donny].base_tile = SPR_GENERIC_BASE;
-            entities[donny].dialogue_id = DLG_DONNY_TACOS;
-            entities[donny].dir = DIR_DOWN;
-        }
-    }
-    if (map_id == MAP_ID_STREETS) {
-        int informant = entity_create(ENT_NPC, 176, 128);
-        if (informant >= 0) {
-            entities[informant].base_tile = SPR_GENERIC_BASE;
-            entities[informant].dialogue_id = DLG_INFORMANT;
-            entities[informant].dir = DIR_LEFT;
-        }
-    }
+    // Spawn NPCs for this map (no players — they already exist)
+    spawn_entities(map_id, 0);
 }

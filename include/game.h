@@ -28,9 +28,4 @@ void game_draw(void);
 // Transition to a new map
 void game_change_map(int map_id, int spawn_x, int spawn_y);
 
-// Map IDs
-#define MAP_ID_HQ      0
-#define MAP_ID_STREETS  1
-#define MAP_ID_TACO     2
-
 #endif // GAME_H

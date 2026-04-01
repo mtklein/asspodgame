@@ -1,7 +1,7 @@
 builddir = out
 
 rule cc
-  command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -Wall -Wextra -Wno-unused-parameter -Iinclude -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
+  command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -Wall -Wextra -Wno-unused-parameter -Iinclude -I$builddir -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
   depfile = $out.d
 
 rule as
@@ -22,10 +22,18 @@ rule symlink
   command = ln -sf $in $out
 rule run_emu
   command = open -a mGBA $in  pool = console
+rule bake_maps
+  command = python3 tools/bake_maps.py levels/maps $builddir/gen_maps.c $builddir/gen_maps.h
+rule bake_dialogue
+  command = python3 tools/bake_dialogue.py levels/dialogue $builddir/gen_dialogue.c $builddir/gen_dialogue.h
 
 # Host tools
 build $builddir/gbafix: hostcc tools/gbafix.c
 build $builddir/run_tests: hostcc_mgba tools/run_tests.c
+
+# Generated data from levels/
+build $builddir/gen_maps.c $builddir/gen_maps.h: bake_maps | levels/maps/dfwtf_hq.json levels/maps/dfw_streets.json levels/maps/taco_bongo.json
+build $builddir/gen_dialogue.c $builddir/gen_dialogue.h: bake_dialogue | levels/dialogue/rubik_intro.json levels/dialogue/peacemaker_hint.json levels/dialogue/donny_tacos.json levels/dialogue/ramis_car.json levels/dialogue/random_cop_1.json levels/dialogue/random_cop_2.json levels/dialogue/informant.json
 
 # Shared objects (used by both game and test ROMs)
 build $builddir/combat.o: cc src/combat.c
@@ -34,6 +42,8 @@ build $builddir/dialogue.o: cc src/dialogue.c
 build $builddir/entity.o: cc src/entity.c
 build $builddir/game.o: cc src/game.c
 build $builddir/game_data.o: cc src/game_data.c
+build $builddir/gen_maps.o: cc $builddir/gen_maps.c
+build $builddir/gen_dialogue.o: cc $builddir/gen_dialogue.c
 build $builddir/input.o: cc src/input.c
 build $builddir/map.o: cc src/map.c
 build $builddir/sprite.o: cc src/sprite.c
@@ -45,12 +55,12 @@ build $builddir/main.o: cc src/main.c
 build $builddir/test_main.o: cc src/test_main.c
 
 # Game ROM
-build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
+build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
 build $builddir/ass_game.raw.gba: elf2bin $builddir/ass_game.elf
 build $builddir/ass_game.gba: gbafix $builddir/ass_game.raw.gba | $builddir/gbafix
 
 # Test ROM
-build $builddir/ass_game_test.elf: link $builddir/test_main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
+build $builddir/ass_game_test.elf: link $builddir/test_main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
 build $builddir/ass_game_test.raw.gba: elf2bin $builddir/ass_game_test.elf
 build $builddir/ass_game_test.gba: gbafix $builddir/ass_game_test.raw.gba | $builddir/gbafix
 
