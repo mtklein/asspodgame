@@ -3,6 +3,8 @@
 #include "input.h"
 #include "entity.h"
 #include "game_data.h"
+#include "portrait_data.h"
+#include "sprite.h"
 
 // Dialogue box uses BG2 as a text layer
 #define DLG_SBB     24   // Screenblock for dialogue text
@@ -34,6 +36,38 @@ static int current_page;
 static int page_char_counts[MAX_PAGES];
 static int num_pages;
 static int blink_timer;
+static const char *current_speaker;
+static int portrait_is_pc;  // 1 = right side (PC), 0 = left side (NPC)
+
+static void show_portrait(const char *speaker) {
+    current_speaker = speaker;
+    const u32 *data = portrait_find(speaker);
+    if (!data) {
+        sprite_hide(PORTRAIT_OAM_SLOT);
+        return;
+    }
+    // Determine if this is a PC portrait (right side) or NPC (left side)
+    portrait_is_pc = 0;
+    if (speaker) {
+        const char *s = speaker;
+        // Check for player character names
+        if ((s[0]=='T'&&s[1]=='r'&&s[2]=='e') || (s[0]=='K'&&s[1]=='i'&&s[2]=='p'))
+            portrait_is_pc = 1;
+    }
+    sprite_load_tiles(data, PORTRAIT_TILE_BASE, PORTRAIT_BYTES);
+    sprite_set_size(PORTRAIT_OAM_SLOT, ATTR0_SQUARE, ATTR1_SIZE_32);
+    sprite_set_tile(PORTRAIT_OAM_SLOT, PORTRAIT_TILE_BASE, 0);
+    sprite_show(PORTRAIT_OAM_SLOT);
+    // Position: NPC on left (x=4), PC on right (x=204)
+    int px = portrait_is_pc ? 204 : 4;
+    int py = 120 - 36;  // above the text box
+    sprite_set_pos(PORTRAIT_OAM_SLOT, px, py);
+}
+
+static void hide_portrait(void) {
+    sprite_hide(PORTRAIT_OAM_SLOT);
+    current_speaker = 0;
+}
 
 static const DialogueTree* get_tree(void) {
     if (current_tree_id < NUM_DIALOGUE_TREES)
@@ -142,7 +176,10 @@ void dialogue_start(u16 tree_id) {
     }
 
     const DialogueNode *node = get_node();
-    if (node) compute_pages(node->text);
+    if (node) {
+        compute_pages(node->text);
+        show_portrait(node->speaker);
+    }
 }
 
 static void reset_for_node(void) {
@@ -151,7 +188,10 @@ static void reset_for_node(void) {
     current_page = 0;
     blink_timer = 0;
     const DialogueNode *node = get_node();
-    if (node) compute_pages(node->text);
+    if (node) {
+        compute_pages(node->text);
+        show_portrait(node->speaker);
+    }
 }
 
 void dialogue_update(void) {
@@ -161,6 +201,7 @@ void dialogue_update(void) {
     if (!node) {
         dlg_state = DLG_INACTIVE;
         REG_DISPCNT &= ~DCNT_BG2;
+        hide_portrait();
         return;
     }
 
@@ -345,44 +386,48 @@ void text_init(void) {
     // Tile 0: transparent
     for (int i = 0; i < 8; i++) dest[i] = 0;
 
-    // Tiles 1-9: box border pieces (solid fill + edges)
-    // Tile 1: solid fill
-    for (int i = 8; i < 16; i++) dest[i] = 0x11111111;
-    // Tile 2: top-left corner
+    // Tiles 1-9: FF-style blue gradient box with thin white border
+    // Colors: 1=dark blue, 2=white border, 3=mid blue, 4=lighter blue
+    // Tile 1: gradient fill (dark blue top to mid blue bottom)
+    dest[8]=0x11111111; dest[9]=0x11111111; dest[10]=0x31111111; dest[11]=0x31313131;
+    dest[12]=0x33333333; dest[13]=0x33333333; dest[14]=0x43333333; dest[15]=0x44444444;
+    // Tile 2: top-left corner (white border + gradient)
     dest[16]=0x22222222; dest[17]=0x21111111; dest[18]=0x21111111; dest[19]=0x21111111;
-    dest[20]=0x21111111; dest[21]=0x21111111; dest[22]=0x21111111; dest[23]=0x21111111;
+    dest[20]=0x21313131; dest[21]=0x23333333; dest[22]=0x23333333; dest[23]=0x24333333;
     // Tile 3: top edge
     dest[24]=0x22222222; dest[25]=0x11111111; dest[26]=0x11111111; dest[27]=0x11111111;
-    dest[28]=0x11111111; dest[29]=0x11111111; dest[30]=0x11111111; dest[31]=0x11111111;
+    dest[28]=0x31313131; dest[29]=0x33333333; dest[30]=0x33333333; dest[31]=0x43333333;
     // Tile 4: top-right corner
     dest[32]=0x22222222; dest[33]=0x11111112; dest[34]=0x11111112; dest[35]=0x11111112;
-    dest[36]=0x11111112; dest[37]=0x11111112; dest[38]=0x11111112; dest[39]=0x11111112;
-    // Tile 5: left edge
-    dest[40]=0x21111111; dest[41]=0x21111111; dest[42]=0x21111111; dest[43]=0x21111111;
-    dest[44]=0x21111111; dest[45]=0x21111111; dest[46]=0x21111111; dest[47]=0x21111111;
+    dest[36]=0x31313132; dest[37]=0x33333332; dest[38]=0x33333332; dest[39]=0x43333332;
+    // Tile 5: left edge (gradient continues)
+    dest[40]=0x24444444; dest[41]=0x24444444; dest[42]=0x24444444; dest[43]=0x24444444;
+    dest[44]=0x24444444; dest[45]=0x24444444; dest[46]=0x24444444; dest[47]=0x24444444;
     // Tile 6: right edge
-    dest[48]=0x11111112; dest[49]=0x11111112; dest[50]=0x11111112; dest[51]=0x11111112;
-    dest[52]=0x11111112; dest[53]=0x11111112; dest[54]=0x11111112; dest[55]=0x11111112;
+    dest[48]=0x44444442; dest[49]=0x44444442; dest[50]=0x44444442; dest[51]=0x44444442;
+    dest[52]=0x44444442; dest[53]=0x44444442; dest[54]=0x44444442; dest[55]=0x44444442;
     // Tile 7: bottom-left
-    dest[56]=0x21111111; dest[57]=0x21111111; dest[58]=0x21111111; dest[59]=0x21111111;
-    dest[60]=0x21111111; dest[61]=0x21111111; dest[62]=0x21111111; dest[63]=0x22222222;
+    dest[56]=0x24444444; dest[57]=0x24444444; dest[58]=0x24444444; dest[59]=0x24444444;
+    dest[60]=0x24444444; dest[61]=0x24444444; dest[62]=0x24444444; dest[63]=0x22222222;
     // Tile 8: bottom edge
-    dest[64]=0x11111111; dest[65]=0x11111111; dest[66]=0x11111111; dest[67]=0x11111111;
-    dest[68]=0x11111111; dest[69]=0x11111111; dest[70]=0x11111111; dest[71]=0x22222222;
+    dest[64]=0x44444444; dest[65]=0x44444444; dest[66]=0x44444444; dest[67]=0x44444444;
+    dest[68]=0x44444444; dest[69]=0x44444444; dest[70]=0x44444444; dest[71]=0x22222222;
     // Tile 9: bottom-right
-    dest[72]=0x11111112; dest[73]=0x11111112; dest[74]=0x11111112; dest[75]=0x11111112;
-    dest[76]=0x11111112; dest[77]=0x11111112; dest[78]=0x11111112; dest[79]=0x22222222;
+    dest[72]=0x44444442; dest[73]=0x44444442; dest[74]=0x44444442; dest[75]=0x44444442;
+    dest[76]=0x44444442; dest[77]=0x44444442; dest[78]=0x44444442; dest[79]=0x22222222;
 
     // Load ASCII font (tiles 32..126 in charblock)
     u32 *font_dest = dest + (32 * 8);
     for (int i = 0; i < FONT_NUM_TILES * 8; i++)
         font_dest[i] = font_4bpp[i];
 
-    // Palette 15 for text/UI
+    // Palette 15 for text/UI — FF-style blue gradient
     u16 *pal = (u16*)(MEM_PAL_BG + 15 * 32);
     pal[0]  = 0x0000;              // Transparent
-    pal[1]  = RGB15(4, 4, 8);     // Dark blue-grey (box fill)
-    pal[2]  = RGB15(20, 16, 8);   // Gold (box border)
+    pal[1]  = RGB15(1, 1, 12);    // Dark blue (top of gradient)
+    pal[2]  = RGB15(24, 24, 28);  // White-ish (thin border)
+    pal[3]  = RGB15(3, 3, 16);    // Mid blue
+    pal[4]  = RGB15(5, 5, 20);    // Lighter blue (bottom of gradient)
     pal[15] = RGB15(31, 31, 31);  // White (font)
 }
 

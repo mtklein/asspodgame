@@ -52,6 +52,7 @@ build $builddir/gen_dialogue.o: cc $builddir/gen_dialogue.c
 build $builddir/gen_tileset.o: cc $builddir/gen_tileset.c
 build $builddir/input.o: cc src/input.c
 build $builddir/map.o: cc src/map.c
+build $builddir/portrait_data.o: cc src/portrait_data.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 build $builddir/sprite.o: cc src/sprite.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 build $builddir/sprite_data.o: cc src/sprite_data.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 build $builddir/crt0.o: as src/crt0.s
@@ -61,12 +62,12 @@ build $builddir/main.o: cc src/main.c || $builddir/gen_maps.h $builddir/gen_dial
 build $builddir/test_main.o: cc src/test_main.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 
 # Game ROM
-build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/gen_tileset.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
+build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/gen_tileset.o $builddir/input.o $builddir/portrait_data.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
 build $builddir/ass_game.raw.gba: elf2bin $builddir/ass_game.elf
 build $builddir/ass_game.gba: gbafix $builddir/ass_game.raw.gba | $builddir/gbafix
 
 # Test ROM
-build $builddir/ass_game_test.elf: link $builddir/test_main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/gen_tileset.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
+build $builddir/ass_game_test.elf: link $builddir/test_main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/gen_tileset.o $builddir/input.o $builddir/portrait_data.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
 build $builddir/ass_game_test.raw.gba: elf2bin $builddir/ass_game_test.elf
 build $builddir/ass_game_test.gba: gbafix $builddir/ass_game_test.raw.gba | $builddir/gbafix
 
