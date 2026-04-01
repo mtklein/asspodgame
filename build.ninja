@@ -32,6 +32,7 @@ rule bake_tileset
 # Host tools
 build $builddir/gbafix: hostcc tools/gbafix.c
 build $builddir/run_tests: hostcc_mgba tools/run_tests.c
+build $builddir/screenshot: hostcc_mgba tools/screenshot.c
 
 # Generated data from levels/
 build $builddir/gen_maps.c $builddir/gen_maps.h: bake_maps | levels/maps/dfwtf_hq.json levels/maps/dfw_streets.json levels/maps/taco_bongo.json levels/tilesets/tileset_urban.tsj
