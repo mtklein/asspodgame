@@ -1,0 +1,33 @@
+{
+    "id": "DLG_DONNY_TACOS",
+    "index": 3,
+    "nodes": [
+        {
+            "speaker": "Donny",
+            "text": "GUYS! Boys' night!\nLet's Taco-Bongo our feelings!",
+            "choices": [
+                { "text": "Surf-and-turf tacos. NOW.", "next": 1, "fate": 2 },
+                { "text": "We're on a case, Donny.", "next": 2 },
+                { "text": "Define 'boys night'.", "next": 1, "fate": 1 }
+            ]
+        },
+        {
+            "speaker": "Donny",
+            "text": "Now THAT'S what I'm talking\nabout! Extra guac on me!",
+            "next": null
+        },
+        {
+            "speaker": "Donny",
+            "text": "The case can wait ONE hour.\nC'mon. Deep-fried oreos too.",
+            "choices": [
+                { "text": "You had me at oreos.", "next": 1, "fate": 2 },
+                { "text": "DFWTF comes first.", "next": 3 }
+            ]
+        },
+        {
+            "speaker": "Donny",
+            "text": "Your loss. More oreos for me.",
+            "next": null
+        }
+    ]
+}

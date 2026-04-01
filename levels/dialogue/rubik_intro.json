@@ -1,0 +1,33 @@
+{
+    "id": "DLG_RUBIK_INTRO",
+    "index": 1,
+    "nodes": [
+        {
+            "speaker": "Rubik",
+            "text": "Welcome to DFWTF. I'm Rubik.\nTry not to break anything.",
+            "choices": [
+                { "text": "The name's Steel. Trevor Steel.", "next": 1, "fate": 2 },
+                { "text": "What's DFWTF stand for?", "next": 2 },
+                { "text": "*adjusts sunglasses* ...Noted.", "next": 1, "fate": 1 }
+            ]
+        },
+        {
+            "speaker": "Rubik",
+            "text": "Yeah, sure it is.\nYour first case is on your desk.",
+            "next": null
+        },
+        {
+            "speaker": "Rubik",
+            "text": "Dallas-Fort Worth Task Force.\nWe handle the weird stuff.",
+            "choices": [
+                { "text": "Say no more. I got this.", "next": 3, "fate": 1 },
+                { "text": "So... like regular cops?", "next": 3, "fate": 2 }
+            ]
+        },
+        {
+            "speaker": "Rubik",
+            "text": "Sure you do. Case file's\non your desk. Try not to die.",
+            "next": null
+        }
+    ]
+}

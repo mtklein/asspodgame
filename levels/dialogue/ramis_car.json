@@ -1,0 +1,25 @@
+{
+    "id": "DLG_RAMIS_CAR",
+    "index": 4,
+    "nodes": [
+        {
+            "speaker": "Ramis",
+            "text": "So... I may have lost R.A.D.\nPlease don't tell the chief.",
+            "choices": [
+                { "text": "R.A.D.?", "next": 1 },
+                { "text": "The robot?! HOW?!", "next": 2, "fate": 2 },
+                { "text": "*sigh* Of course you did.", "next": 2, "fate": 1 }
+            ]
+        },
+        {
+            "speaker": "Ramis",
+            "text": "Robotic Assistant Droid.\nCost fifty grand. It's gone.",
+            "next": 2
+        },
+        {
+            "speaker": "Ramis",
+            "text": "It drove itself out the\ngarage. Find it. Be heroes.",
+            "next": null
+        }
+    ]
+}

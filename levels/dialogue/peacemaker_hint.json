@@ -1,0 +1,25 @@
+{
+    "id": "DLG_PEACEMAKER_HINT",
+    "index": 2,
+    "nodes": [
+        {
+            "speaker": "Peacemaker",
+            "text": "Listen up. There's been a\nrobbery on Main Street.",
+            "choices": [
+                { "text": "Details?", "next": 1 },
+                { "text": "Was it the Taco-Bongo?!", "next": 2, "fate": 2 },
+                { "text": "*cracks knuckles* Let's go.", "next": 1, "fate": 1 }
+            ]
+        },
+        {
+            "speaker": "Peacemaker",
+            "text": "Jewelry store. Perp fled south.\nTrack 'em down.",
+            "next": null
+        },
+        {
+            "speaker": "Peacemaker",
+            "text": "The Taco-Bongo is SACRED.\nFocus. Jewelry store. Main St.",
+            "next": 1
+        }
+    ]
+}

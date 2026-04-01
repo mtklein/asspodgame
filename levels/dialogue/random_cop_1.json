@@ -1,0 +1,11 @@
+{
+    "id": "DLG_RANDOM_COP_1",
+    "index": 5,
+    "nodes": [
+        {
+            "speaker": "Officer",
+            "text": "New policy: mandatory taco\nFridays. Life is good.",
+            "next": null
+        }
+    ]
+}

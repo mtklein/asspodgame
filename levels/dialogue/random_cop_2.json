@@ -1,0 +1,19 @@
+{
+    "id": "DLG_RANDOM_COP_2",
+    "index": 6,
+    "nodes": [
+        {
+            "speaker": "Officer",
+            "text": "Suspicious character near\nthe park. Tall. Shady.",
+            "choices": [
+                { "text": "Description?", "next": 1 },
+                { "text": "Was it a duck?", "next": 1, "fate": 2 }
+            ]
+        },
+        {
+            "speaker": "Officer",
+            "text": "...I'm not answering that.",
+            "next": null
+        }
+    ]
+}

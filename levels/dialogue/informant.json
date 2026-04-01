@@ -1,0 +1,24 @@
+{
+    "id": "DLG_INFORMANT",
+    "index": 7,
+    "nodes": [
+        {
+            "speaker": "???",
+            "text": "Psst. You looking for\nsomething mechanical?",
+            "choices": [
+                { "text": "Maybe. You got info?", "next": 1 },
+                { "text": "What's your angle?", "next": 1, "fate": 1 }
+            ]
+        },
+        {
+            "speaker": "???",
+            "text": "Warehouse on 5th. Heard\nsome folks talking about R.A.D.",
+            "next": 2
+        },
+        {
+            "speaker": "???",
+            "text": "That's all I got.\nNow beat it.",
+            "next": null
+        }
+    ]
+}
