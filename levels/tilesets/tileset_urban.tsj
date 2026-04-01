@@ -1,0 +1,30 @@
+{
+    "name": "urban",
+    "image": "tileset_urban.png",
+    "imagewidth": 64,
+    "imageheight": 64,
+    "tilewidth": 8,
+    "tileheight": 8,
+    "tilecount": 64,
+    "columns": 8,
+    "type": "tileset",
+    "tiles": [
+        { "id": 0,  "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 4,  "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 5,  "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 7,  "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 12, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 13, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 14, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 15, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 20, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 21, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 22, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 23, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 31, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 32, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 33, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 34, "properties": [{"name":"collision","type":"int","value":1}] },
+        { "id": 35, "properties": [{"name":"collision","type":"int","value":1}] }
+    ]
+}

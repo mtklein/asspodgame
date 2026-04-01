@@ -1,352 +1,304 @@
 #!/usr/bin/env python3
-"""bake_maps.py -- Convert Tiled-compatible JSON map files to C source/header.
+"""bake_maps.py -- Convert Tiled JSON map files to C source/header.
 
 Usage: bake_maps.py <input_dir> <output.c> <output.h>
 
-Reads all *.json files from input_dir, sorts by c_name, and generates C code
-with map data arrays, entity spawn tables, and map transition tables.
+Reads all *.json map files from input_dir. Collision is derived from
+tile properties in the tileset .tsj file, not from a collision layer.
 """
 
-import json
-import os
-import sys
+import json, os, sys
 
-# Map c_name -> (MAP_ID define name, index)
 MAP_ID_TABLE = {
-    "map_dfwtf_hq":    ("MAP_ID_HQ",      0),
-    "map_dfw_streets":  ("MAP_ID_STREETS",  1),
-    "map_taco_bongo":   ("MAP_ID_TACO",     2),
+    "map_dfwtf_hq":   ("MAP_ID_HQ",     0),
+    "map_dfw_streets": ("MAP_ID_STREETS", 1),
+    "map_taco_bongo":  ("MAP_ID_TACO",    2),
 }
 
-# Short internal names for array naming (matching original C code style)
 SHORT_NAMES = {
-    "map_dfwtf_hq":    "hq",
-    "map_dfw_streets":  "streets",
-    "map_taco_bongo":   "taco",
+    "map_dfwtf_hq":   "hq",
+    "map_dfw_streets": "streets",
+    "map_taco_bongo":  "taco",
 }
 
-# Entity type string -> C enum name
-ENTITY_TYPES = {
-    "ENT_NONE":           "ENT_NONE",
-    "ENT_PLAYER_TREVOR":  "ENT_PLAYER_TREVOR",
-    "ENT_PLAYER_KIP":     "ENT_PLAYER_KIP",
-    "ENT_NPC":            "ENT_NPC",
-    "ENT_ITEM":           "ENT_ITEM",
-    "ENT_TRIGGER":        "ENT_TRIGGER",
-}
-
-# Direction string -> C enum value
 DIRECTION_VALUES = {
-    "DIR_DOWN":  0,
-    "DIR_UP":    1,
-    "DIR_LEFT":  2,
-    "DIR_RIGHT": 3,
+    "DIR_DOWN": 0, "DIR_UP": 1, "DIR_LEFT": 2, "DIR_RIGHT": 3,
 }
 
-# Sprite base string -> numeric tile value
 SPRITE_BASES = {
-    "SPR_TREVOR_BASE":  0,
-    "SPR_KIP_BASE":     32,
-    "SPR_RUBIK_BASE":   64,
-    "SPR_GENERIC_BASE": 96,
+    "SPR_TREVOR_BASE": 0, "SPR_KIP_BASE": 32,
+    "SPR_RUBIK_BASE": 64, "SPR_GENERIC_BASE": 96,
 }
 
 TRANSITION_CODE_START = 10
 
 
+def load_tileset_collision(tsj_path):
+    """Load collision properties per tile ID from a .tsj file."""
+    with open(tsj_path) as f:
+        tsj = json.load(f)
+    collision = {}
+    for tile in tsj.get("tiles", []):
+        tid = tile["id"]
+        for prop in tile.get("properties", []):
+            if prop["name"] == "collision":
+                collision[tid] = prop["value"]
+    return collision
+
+
+def get_prop(obj, name, default=None):
+    """Get a named property from a Tiled object's properties list."""
+    for p in obj.get("properties", []):
+        if p["name"] == name:
+            return p["value"]
+    return default
+
+
+def get_map_prop(map_data, name, default=None):
+    """Get a named property from a Tiled map's properties."""
+    props = map_data.get("properties", {})
+    if isinstance(props, list):
+        for p in props:
+            if p["name"] == name:
+                return p["value"]
+        return default
+    return props.get(name, default)
+
+
 def load_maps(input_dir):
-    """Load all JSON map files from the input directory."""
     maps = []
     for fname in sorted(os.listdir(input_dir)):
         if not fname.endswith(".json"):
             continue
         path = os.path.join(input_dir, fname)
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
         maps.append((fname, data))
-    # Sort by c_name property
-    maps.sort(key=lambda m: m[1]["properties"]["c_name"])
+    maps.sort(key=lambda m: get_map_prop(m[1], "c_name"))
     return maps
 
 
 def get_layer(map_data, name):
-    """Find a layer by name."""
     for layer in map_data["layers"]:
         if layer["name"] == name:
             return layer
     return None
 
 
+def resolve_tileset(map_data, input_dir):
+    """Find the tileset .tsj path and firstgid from the map's tileset refs."""
+    for ts_ref in map_data.get("tilesets", []):
+        source = ts_ref.get("source", "")
+        firstgid = ts_ref.get("firstgid", 1)
+        if source:
+            # Resolve relative to the map's directory
+            maps_dir = os.path.join(input_dir)
+            tsj_path = os.path.normpath(os.path.join(maps_dir, source))
+            return tsj_path, firstgid
+    return None, 1
+
+
+def gid_to_tile(gid, firstgid):
+    """Convert a Tiled GID to a raw tile index."""
+    if gid == 0:
+        return 0  # No tile -> tile 0 (empty)
+    return gid - firstgid
+
+
+def derive_collision(fg_data, firstgid, tile_collision):
+    """Build collision array from fg tile data and tileset collision props."""
+    col = []
+    for gid in fg_data:
+        tile_idx = gid_to_tile(gid, firstgid)
+        col.append(tile_collision.get(tile_idx, 0))
+    return col
+
+
 def format_array(data, per_line=16):
-    """Format a list of integer values as C array initializer lines."""
     lines = []
     for i in range(0, len(data), per_line):
         chunk = data[i:i + per_line]
-        line = ",".join(str(v) for v in chunk) + ","
-        lines.append("    " + line)
+        lines.append("    " + ",".join(str(v) for v in chunk) + ",")
     return "\n".join(lines)
 
 
 def extract_objects(map_data):
-    """Extract entity spawn and transition objects from the objects layer."""
     obj_layer = get_layer(map_data, "objects")
-    if obj_layer is None:
+    if not obj_layer:
         return [], []
-
-    spawns = []
-    transitions = []
-
+    spawns, transitions = [], []
     for obj in obj_layer.get("objects", []):
         obj_type = obj.get("type", "")
-        props = obj.get("properties", {})
-
         if obj_type in ("player", "npc"):
-            spawn = {
-                "name": obj.get("name", ""),
-                "obj_type": obj_type,
-                "x": obj.get("x", 0),
-                "y": obj.get("y", 0),
-                "properties": props,
-            }
-            spawns.append(spawn)
+            spawns.append(obj)
         elif obj_type == "transition":
-            trans = {
-                "name": obj.get("name", ""),
-                "x": obj.get("x", 0),
-                "y": obj.get("y", 0),
-                "width": obj.get("width", 8),
-                "height": obj.get("height", 8),
-                "properties": props,
-            }
-            transitions.append(trans)
-
+            transitions.append(obj)
     return spawns, transitions
 
 
-def resolve_entity_type(spawn):
-    """Determine the EntityType enum value for a spawn."""
-    props = spawn["properties"]
-    if spawn["obj_type"] == "player":
-        etype = props.get("entity_type", "ENT_NONE")
-        return ENTITY_TYPES.get(etype, "ENT_NONE")
-    elif spawn["obj_type"] == "npc":
-        return "ENT_NPC"
-    return "ENT_NONE"
-
-
-def resolve_direction(props):
-    """Get direction value from properties."""
-    dir_str = props.get("direction", "DIR_DOWN")
-    return DIRECTION_VALUES.get(dir_str, 0)
-
-
-def resolve_sprite_base(props):
-    """Get sprite base tile value from properties."""
-    spr_str = props.get("sprite", "SPR_GENERIC_BASE")
-    return SPRITE_BASES.get(spr_str, 96)
-
-
-def resolve_dialogue_id(props):
-    """Get dialogue ID string from properties (passed through as C define)."""
-    return props.get("dialogue_id", "0")
-
-
-def write_collision_transitions(collision_data, transitions, map_width):
-    """Write transition collision codes into the collision array.
-
-    Each transition object gets a code starting at TRANSITION_CODE_START (10).
-    The code is written into every tile covered by the transition's pixel rect.
-
-    Returns the modified collision data and a list of
-    (collision_code, target_map, spawn_x, spawn_y) tuples.
-    """
-    collision = list(collision_data)
-    transition_records = []
+def write_collision_transitions(collision, transitions, grid_w):
+    collision = list(collision)
+    records = []
     code = TRANSITION_CODE_START
-
-    for trans in transitions:
-        px = trans["x"]
-        py = trans["y"]
-        pw = trans["width"]
-        ph = trans["height"]
-        props = trans["properties"]
-        target_map = props["target_map"]
-        spawn_x = props["spawn_x"]
-        spawn_y = props["spawn_y"]
-
-        # Convert pixel rect to tile range
-        tile_x0 = px // 8
-        tile_y0 = py // 8
-        tile_x1 = (px + pw + 7) // 8
-        tile_y1 = (py + ph + 7) // 8
-
-        for ty in range(tile_y0, tile_y1):
-            for tx in range(tile_x0, tile_x1):
-                idx = ty * map_width + tx
+    for tr in transitions:
+        px, py = int(tr["x"]), int(tr["y"])
+        pw, ph = int(tr["width"]), int(tr["height"])
+        target = get_prop(tr, "target_map")
+        sx = get_prop(tr, "spawn_x", 0)
+        sy = get_prop(tr, "spawn_y", 0)
+        tx0, ty0 = px // 8, py // 8
+        tx1, ty1 = (px + pw + 7) // 8, (py + ph + 7) // 8
+        for ty in range(ty0, ty1):
+            for tx in range(tx0, tx1):
+                idx = ty * grid_w + tx
                 if 0 <= idx < len(collision):
                     collision[idx] = code
-
-        transition_records.append((code, target_map, spawn_x, spawn_y))
+        records.append((code, target, sx, sy))
         code += 1
-
-    return collision, transition_records
-
-
-def short_name(c_name):
-    """Get the short internal name for array naming."""
-    return SHORT_NAMES.get(c_name, c_name.replace("map_", ""))
+    return collision, records
 
 
-def generate_c(maps):
-    """Generate the output .c file content."""
-    lines = []
-    lines.append("// gen_maps.c -- Auto-generated by bake_maps.py")
-    lines.append("// Do not edit by hand.")
-    lines.append('#include "gen_maps.h"')
-    lines.append('#include "gen_dialogue.h"')
-    lines.append("#include <stddef.h>")
-    lines.append("")
+def resolve_entity_type(obj):
+    obj_type = obj.get("type", "")
+    if obj_type == "player":
+        return get_prop(obj, "entity_type", "ENT_NONE")
+    return "ENT_NPC"
 
-    # Per-map info keyed by c_name, for building the tables later
-    spawn_info = {}   # c_name -> (array_name, count) or (None, 0)
-    trans_info = {}   # c_name -> (array_name, count) or (None, 0)
+
+def emit_spawn(obj, lines):
+    etype = resolve_entity_type(obj)
+    d = DIRECTION_VALUES.get(get_prop(obj, "direction", "DIR_DOWN"), 0)
+    bt = SPRITE_BASES.get(get_prop(obj, "sprite", "SPR_GENERIC_BASE"), 96)
+    ws = get_prop(obj, "walk_speed", 0)
+    dlg = get_prop(obj, "dialogue_id", "0")
+    beh = get_prop(obj, "behavior", 0)
+    sh = get_prop(obj, "shoot", 0)
+    br = get_prop(obj, "brawn", 0)
+    bn = get_prop(obj, "brains", 0)
+    tk = get_prop(obj, "talk", 0)
+    co = get_prop(obj, "cool", 0)
+    hp = get_prop(obj, "hp", 0)
+    hm = get_prop(obj, "hp_max", 0)
+    fp = get_prop(obj, "fate_points", 0)
+    fm = get_prop(obj, "fate_max", 0)
+    lines.append(
+        "    { %s, %d, %d, %d, %d, %d, %s, %d,"
+        " %d,%d,%d,%d,%d, %d,%d,%d,%d }," % (
+            etype, int(obj["x"]), int(obj["y"]), d, bt, ws, dlg, beh,
+            sh, br, bn, tk, co, hp, hm, fp, fm))
+
+
+def generate_c(maps, input_dir):
+    lines = [
+        "// gen_maps.c -- Auto-generated by bake_maps.py",
+        "// Do not edit by hand.",
+        '#include "gen_maps.h"',
+        '#include "gen_dialogue.h"',
+        "#include <stddef.h>",
+        "",
+    ]
+
+    spawn_info = {}
+    trans_info = {}
 
     for fname, map_data in maps:
-        props = map_data["properties"]
-        c_name = props["c_name"]
-        real_w = props["real_width"]
-        real_h = props["real_height"]
+        c_name = get_map_prop(map_data, "c_name")
+        real_w = get_map_prop(map_data, "real_width")
+        real_h = get_map_prop(map_data, "real_height")
         grid_w = map_data["width"]
         grid_h = map_data["height"]
+        sn = SHORT_NAMES.get(c_name, c_name.replace("map_", ""))
 
-        sn = short_name(c_name)
-        fg_arr_name = "map_%s_fg_data" % sn
-        col_arr_name = "map_%s_collision" % sn
-        layer_name = "map_%s_fg" % sn
+        # Resolve tileset
+        tsj_path, firstgid = resolve_tileset(map_data, input_dir)
+        tile_collision = load_tileset_collision(tsj_path) if tsj_path else {}
 
+        # Get fg layer and convert GIDs to raw tile indices
         fg_layer = get_layer(map_data, "fg")
-        col_layer = get_layer(map_data, "collision")
+        fg_gids = fg_layer["data"] if fg_layer else [0] * (grid_w * grid_h)
+        fg_data = [gid_to_tile(g, firstgid) for g in fg_gids]
 
-        fg_data = fg_layer["data"] if fg_layer else [0] * (grid_w * grid_h)
-        col_data = col_layer["data"] if col_layer else [0] * (grid_w * grid_h)
+        # Derive collision from tile properties
+        col_data = derive_collision(fg_gids, firstgid, tile_collision)
 
+        # Extract objects
         spawns, transitions = extract_objects(map_data)
 
-        # Write transition collision codes into the collision array
+        # Write transitions into collision
         col_data, trans_records = write_collision_transitions(
-            col_data, transitions, grid_w
-        )
+            col_data, transitions, grid_w)
 
-        # -- fg tile data --
-        lines.append("static const u16 %s[%d * %d] = {" % (
-            fg_arr_name, grid_w, grid_h))
+        # Emit arrays
+        fg_arr = "map_%s_fg_data" % sn
+        col_arr = "map_%s_collision" % sn
+        layer_name = "map_%s_fg" % sn
+
+        lines.append("static const u16 %s[%d * %d] = {" % (fg_arr, grid_w, grid_h))
         lines.append(format_array(fg_data))
         lines.append("};")
         lines.append("")
 
-        # -- collision data --
-        lines.append("static const u8 %s[%d * %d] = {" % (
-            col_arr_name, grid_w, grid_h))
+        lines.append("static const u8 %s[%d * %d] = {" % (col_arr, grid_w, grid_h))
         lines.append(format_array(col_data))
         lines.append("};")
         lines.append("")
 
-        # -- MapLayer struct --
-        lines.append(
-            "static const MapLayer %s = { .width = %d, .height = %d, "
-            ".data = %s };" % (layer_name, grid_w, grid_h, fg_arr_name))
+        lines.append("static const MapLayer %s = { .width = %d, .height = %d, .data = %s };"
+                      % (layer_name, grid_w, grid_h, fg_arr))
         lines.append("")
 
-        # -- Map struct --
         lines.append("const Map %s = {" % c_name)
         lines.append("    .bg = { .width = 0, .height = 0, .data = NULL },")
         lines.append("    .fg = %s," % layer_name)
-        lines.append("    .collision = %s," % col_arr_name)
+        lines.append("    .collision = %s," % col_arr)
         lines.append("    .width = %d," % real_w)
         lines.append("    .height = %d," % real_h)
         lines.append("};")
         lines.append("")
 
-        # -- Entity spawns --
-        spawns_arr_name = "spawns_%s" % sn
+        # Spawns
+        spawns_arr = "spawns_%s" % sn
         if spawns:
-            lines.append(
-                "static const EntitySpawn %s[] = {" % spawns_arr_name)
+            lines.append("static const EntitySpawn %s[] = {" % spawns_arr)
             for sp in spawns:
-                etype = resolve_entity_type(sp)
-                p = sp["properties"]
-                direction = resolve_direction(p)
-                base_tile = resolve_sprite_base(p)
-                walk_speed = p.get("walk_speed", 0)
-                dlg_id = resolve_dialogue_id(p)
-                behavior = p.get("behavior", 0)
-                shoot = p.get("shoot", 0)
-                brawn = p.get("brawn", 0)
-                brains = p.get("brains", 0)
-                talk = p.get("talk", 0)
-                cool = p.get("cool", 0)
-                hp = p.get("hp", 0)
-                hp_max = p.get("hp_max", 0)
-                fate_points = p.get("fate_points", 0)
-                fate_max = p.get("fate_max", 0)
-
-                lines.append(
-                    "    { %s, %d, %d, %d, %d, %d, %s, %d,"
-                    " %d,%d,%d,%d,%d, %d,%d,%d,%d }," % (
-                        etype, sp["x"], sp["y"], direction, base_tile,
-                        walk_speed, dlg_id, behavior,
-                        shoot, brawn, brains, talk, cool,
-                        hp, hp_max, fate_points, fate_max,
-                    ))
+                emit_spawn(sp, lines)
             lines.append("};")
             lines.append("")
-            spawn_info[c_name] = (spawns_arr_name, len(spawns))
+            spawn_info[c_name] = (spawns_arr, len(spawns))
         else:
             spawn_info[c_name] = (None, 0)
 
-        # -- Transition records --
-        trans_arr_name = "transitions_%s" % sn
+        # Transitions
+        trans_arr = "transitions_%s" % sn
         if trans_records:
-            lines.append(
-                "static const MapTransition %s[] = {" % trans_arr_name)
+            lines.append("static const MapTransition %s[] = {" % trans_arr)
             for code, target, sx, sy in trans_records:
-                lines.append("    { %d, %s, %d, %d }," % (
-                    code, target, sx, sy))
+                lines.append("    { %d, %s, %d, %d }," % (code, target, sx, sy))
             lines.append("};")
             lines.append("")
-            trans_info[c_name] = (trans_arr_name, len(trans_records))
+            trans_info[c_name] = (trans_arr, len(trans_records))
         else:
             trans_info[c_name] = (None, 0)
 
-    # Build the ordered list of (map_id_index, c_name) for table emission
+    # Ordered tables
     ordered = []
-    for fname, map_data in maps:
-        c_name = map_data["properties"]["c_name"]
-        if c_name in MAP_ID_TABLE:
-            _, idx = MAP_ID_TABLE[c_name]
-            ordered.append((idx, c_name))
+    for _, md in maps:
+        cn = get_map_prop(md, "c_name")
+        if cn in MAP_ID_TABLE:
+            ordered.append((MAP_ID_TABLE[cn][1], cn))
     ordered.sort()
 
-    # -- MapSpawnTable array (indexed by MAP_ID) --
     lines.append("const MapSpawnTable map_spawn_tables[MAP_NUM_MAPS] = {")
-    for idx, c_name in ordered:
-        arr_name, count = spawn_info[c_name]
-        if arr_name:
-            lines.append("    { %s, %d }," % (arr_name, count))
-        else:
-            lines.append("    { NULL, 0 },")
+    for _, cn in ordered:
+        arr, cnt = spawn_info[cn]
+        lines.append("    { %s, %d }," % (arr or "NULL", cnt))
     lines.append("};")
     lines.append("")
 
-    # -- MapTransitionTable array (indexed by MAP_ID) --
-    lines.append(
-        "const MapTransitionTable map_transition_tables[MAP_NUM_MAPS] = {")
-    for idx, c_name in ordered:
-        arr_name, count = trans_info[c_name]
-        if arr_name:
-            lines.append("    { %s, %d }," % (arr_name, count))
-        else:
-            lines.append("    { NULL, 0 },")
+    lines.append("const MapTransitionTable map_transition_tables[MAP_NUM_MAPS] = {")
+    for _, cn in ordered:
+        arr, cnt = trans_info[cn]
+        lines.append("    { %s, %d }," % (arr or "NULL", cnt))
     lines.append("};")
     lines.append("")
 
@@ -354,71 +306,63 @@ def generate_c(maps):
 
 
 def generate_h(maps):
-    """Generate the output .h file content."""
-    lines = []
-    lines.append("#ifndef GEN_MAPS_H")
-    lines.append("#define GEN_MAPS_H")
-    lines.append('#include "map.h"')
-    lines.append('#include "entity.h"')
+    lines = [
+        "#ifndef GEN_MAPS_H",
+        "#define GEN_MAPS_H",
+        '#include "map.h"',
+        '#include "entity.h"',
+        "",
+    ]
+
+    entries = []
+    for _, md in maps:
+        cn = get_map_prop(md, "c_name")
+        if cn in MAP_ID_TABLE:
+            entries.append((MAP_ID_TABLE[cn][1], MAP_ID_TABLE[cn][0]))
+    entries.sort()
+
+    for idx, name in entries:
+        lines.append("#define %-16s %d" % (name, idx))
+    lines.append("#define MAP_NUM_MAPS    %d" % len(entries))
     lines.append("")
 
-    # MAP_ID defines in index order
-    id_entries = []
-    for fname, map_data in maps:
-        c_name = map_data["properties"]["c_name"]
-        if c_name in MAP_ID_TABLE:
-            id_name, idx = MAP_ID_TABLE[c_name]
-            id_entries.append((idx, id_name))
-    id_entries.sort()
+    lines += [
+        "typedef struct {",
+        "    u8 type;",
+        "    s32 x, y;",
+        "    u8 dir;",
+        "    u16 base_tile;",
+        "    u8 walk_speed;",
+        "    u16 dialogue_id;",
+        "    u8 npc_behavior;",
+        "    s8 shoot, brawn, brains, talk, cool;",
+        "    s8 hp, hp_max, fate_points, fate_max;",
+        "} EntitySpawn;",
+        "",
+        "typedef struct {",
+        "    const EntitySpawn *spawns;",
+        "    int num_spawns;",
+        "} MapSpawnTable;",
+        "",
+        "typedef struct {",
+        "    u8 collision_code;",
+        "    u8 target_map_id;",
+        "    s32 spawn_x, spawn_y;",
+        "} MapTransition;",
+        "",
+        "typedef struct {",
+        "    const MapTransition *transitions;",
+        "    int num_transitions;",
+        "} MapTransitionTable;",
+        "",
+    ]
 
-    for idx, id_name in id_entries:
-        lines.append("#define %-16s %d" % (id_name, idx))
-    lines.append("#define MAP_NUM_MAPS    %d" % len(id_entries))
-    lines.append("")
-
-    # Struct definitions
-    lines.append("typedef struct {")
-    lines.append("    u8 type;         // EntityType value")
-    lines.append("    s32 x, y;")
-    lines.append("    u8 dir;          // Direction value")
-    lines.append("    u16 base_tile;")
-    lines.append("    u8 walk_speed;")
-    lines.append("    u16 dialogue_id;")
-    lines.append("    u8 npc_behavior;")
-    lines.append("    s8 shoot, brawn, brains, talk, cool;")
-    lines.append("    s8 hp, hp_max, fate_points, fate_max;")
-    lines.append("} EntitySpawn;")
-    lines.append("")
-
-    lines.append("typedef struct {")
-    lines.append("    const EntitySpawn *spawns;")
-    lines.append("    int num_spawns;")
-    lines.append("} MapSpawnTable;")
-    lines.append("")
-
-    lines.append("typedef struct {")
-    lines.append("    u8 collision_code;")
-    lines.append("    u8 target_map_id;")
-    lines.append("    s32 spawn_x, spawn_y;")
-    lines.append("} MapTransition;")
-    lines.append("")
-
-    lines.append("typedef struct {")
-    lines.append("    const MapTransition *transitions;")
-    lines.append("    int num_transitions;")
-    lines.append("} MapTransitionTable;")
-    lines.append("")
-
-    # Extern declarations for Map structs
-    for fname, map_data in maps:
-        c_name = map_data["properties"]["c_name"]
-        lines.append("extern const Map %s;" % c_name)
+    for _, md in maps:
+        cn = get_map_prop(md, "c_name")
+        lines.append("extern const Map %s;" % cn)
     lines.append("extern const MapSpawnTable map_spawn_tables[MAP_NUM_MAPS];")
-    lines.append(
-        "extern const MapTransitionTable "
-        "map_transition_tables[MAP_NUM_MAPS];")
+    lines.append("extern const MapTransitionTable map_transition_tables[MAP_NUM_MAPS];")
     lines.append("")
-
     lines.append("#endif")
     lines.append("")
 
@@ -431,24 +375,16 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    input_dir = sys.argv[1]
-    output_c = sys.argv[2]
-    output_h = sys.argv[3]
-
+    input_dir, output_c, output_h = sys.argv[1], sys.argv[2], sys.argv[3]
     maps = load_maps(input_dir)
-
     if not maps:
         print("No .json map files found in %s" % input_dir, file=sys.stderr)
         sys.exit(1)
 
-    c_src = generate_c(maps)
-    h_src = generate_h(maps)
-
     with open(output_c, "w") as f:
-        f.write(c_src)
-
+        f.write(generate_c(maps, input_dir))
     with open(output_h, "w") as f:
-        f.write(h_src)
+        f.write(generate_h(maps))
 
 
 if __name__ == "__main__":
