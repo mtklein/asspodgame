@@ -220,8 +220,22 @@ def generate_c(maps, input_dir, id_table, short_names):
         fg_gids = fg_layer["data"] if fg_layer else [0] * (grid_w * grid_h)
         fg_data = [gid_to_tile(g, firstgid) for g in fg_gids]
 
+        # Get optional bg layer
+        bg_layer = get_layer(map_data, "bg")
+        if bg_layer:
+            bg_data = [gid_to_tile(g, firstgid) for g in bg_layer["data"]]
+        else:
+            bg_data = None
+
         # Derive collision from tile properties
         col_data = derive_collision(fg_gids, firstgid, tile_collision)
+
+        # Override with explicit collision layer if present
+        col_override = get_layer(map_data, "collision")
+        if col_override:
+            for i, gid in enumerate(col_override["data"]):
+                if gid != 0:
+                    col_data[i] = gid_to_tile(gid, firstgid)
 
         # Extract objects
         spawns, transitions = extract_objects(map_data)
@@ -230,15 +244,28 @@ def generate_c(maps, input_dir, id_table, short_names):
         col_data, trans_records = write_collision_transitions(
             col_data, transitions, grid_w)
 
-        # Emit arrays
+        # Emit fg array
         fg_arr = "map_%s_fg_data" % sn
         col_arr = "map_%s_collision" % sn
-        layer_name = "map_%s_fg" % sn
+        fg_layer_name = "map_%s_fg" % sn
 
         lines.append("static const u16 %s[%d * %d] = {" % (fg_arr, grid_w, grid_h))
         lines.append(format_array(fg_data))
         lines.append("};")
         lines.append("")
+
+        # Emit optional bg array
+        bg_layer_name = None
+        if bg_data is not None:
+            bg_arr = "map_%s_bg_data" % sn
+            bg_layer_name = "map_%s_bg" % sn
+            lines.append("static const u16 %s[%d * %d] = {" % (bg_arr, grid_w, grid_h))
+            lines.append(format_array(bg_data))
+            lines.append("};")
+            lines.append("")
+            lines.append("static const MapLayer %s = { .width = %d, .height = %d, .data = %s };"
+                          % (bg_layer_name, grid_w, grid_h, bg_arr))
+            lines.append("")
 
         lines.append("static const u8 %s[%d * %d] = {" % (col_arr, grid_w, grid_h))
         lines.append(format_array(col_data))
@@ -246,12 +273,15 @@ def generate_c(maps, input_dir, id_table, short_names):
         lines.append("")
 
         lines.append("static const MapLayer %s = { .width = %d, .height = %d, .data = %s };"
-                      % (layer_name, grid_w, grid_h, fg_arr))
+                      % (fg_layer_name, grid_w, grid_h, fg_arr))
         lines.append("")
 
         lines.append("const Map %s = {" % c_name)
-        lines.append("    .bg = { .width = 0, .height = 0, .data = NULL },")
-        lines.append("    .fg = %s," % layer_name)
+        if bg_layer_name:
+            lines.append("    .bg = %s," % bg_layer_name)
+        else:
+            lines.append("    .bg = { .width = 0, .height = 0, .data = NULL },")
+        lines.append("    .fg = %s," % fg_layer_name)
         lines.append("    .collision = %s," % col_arr)
         lines.append("    .width = %d," % real_w)
         lines.append("    .height = %d," % real_h)
