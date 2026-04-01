@@ -81,7 +81,7 @@ u8 map_get_collision(int px, int py) {
         return 1; // Out of bounds = solid
     }
 
-    return current_map->collision[ty * current_map->width + tx];
+    return current_map->collision[ty * current_map->fg.width + tx];
 }
 
 void map_load_tileset(const void *tiles, int num_bytes, int cbb) {

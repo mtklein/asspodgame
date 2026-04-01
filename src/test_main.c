@@ -154,6 +154,10 @@ static void test_passage_widths(void) {
     // Taco table aisles (cols 3-4) must be walkable
     record_result(map_is_walkable(3*8+4, 2*8+4), "passage: taco aisle col 3 walkable");
     record_result(map_is_walkable(4*8+4, 2*8+4), "passage: taco aisle col 4 walkable");
+    // Taco collision must work for rows > 0 (stride bug regression)
+    // Row 4 col 1 is floor (walkable), row 4 col 2 is table (solid)
+    record_result(map_is_walkable(1*8+4, 4*8+4), "passage: taco row4 col1 walkable");
+    record_result(!map_is_walkable(2*8+4, 2*8+4), "passage: taco row2 col2 solid");
 }
 
 static void test_camera_clamp(void) {
