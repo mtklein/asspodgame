@@ -35,6 +35,8 @@ static void spawn_entities(int map_id, int include_players) {
         if (id < 0) continue;
         entities[id].dir = (Direction)s->dir;
         entities[id].base_tile = s->base_tile;
+        sprite_set_tile(entities[id].sprite_id,
+                        (int)(s->base_tile + s->dir * 2 * 4), 0);
         entities[id].walk_speed = s->walk_speed;
         entities[id].dialogue_id = s->dialogue_id;
         entities[id].npc_behavior = s->npc_behavior;
