@@ -272,11 +272,11 @@ static void test_map_data_integrity(void) {
 static void test_sprite_data_exists(void) {
     // Verify sprite arrays contain data (check a few words, not just [0]
     // since some sprites have transparent top-left corners)
-    record_result(spr_trevor[0] != 0, "sprite_data: trevor not empty");
-    record_result(spr_kip[0] != 0, "sprite_data: kip not empty");
-    record_result(spr_npc_rubik[0] != 0, "sprite_data: rubik not empty");
-    // Generic NPC has transparent top-left, check word 1 instead
-    record_result(spr_npc_generic[1] != 0, "sprite_data: generic not empty");
+    // Sprites have transparent backgrounds; check a middle word instead of [0]
+    record_result(spr_trevor[16] != 0, "sprite_data: trevor not empty");
+    record_result(spr_kip[16] != 0, "sprite_data: kip not empty");
+    record_result(spr_npc_rubik[16] != 0, "sprite_data: rubik not empty");
+    record_result(spr_npc_generic[16] != 0, "sprite_data: generic not empty");
 }
 
 static void test_tileset_data(void) {
