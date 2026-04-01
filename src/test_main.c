@@ -413,6 +413,36 @@ static void test_spawn_walkable(void) {
     }
 }
 
+// Regression: map transition spawn points must be walkable
+static void test_transition_spawn_walkable(void) {
+    game_init();
+    sim_key(KEY_START);
+    game_update();
+    sim_no_key();
+    for (int i = 0; i < 20; i++) game_update();
+
+    // Simulate transitioning to each map and verify players can move
+    for (int map_id = 0; map_id < MAP_NUM_MAPS; map_id++) {
+        const MapTransitionTable *tt = &map_transition_tables[map_id];
+        for (int t = 0; t < tt->num_transitions; t++) {
+            const MapTransition *tr = &tt->transitions[t];
+            game_change_map(tr->target_map_id, tr->spawn_x, tr->spawn_y);
+
+            for (int i = 0; i < MAX_ENTITIES; i++) {
+                Entity *e = &entities[i];
+                if (!e->active) continue;
+                if (e->type != ENT_PLAYER_TREVOR && e->type != ENT_PLAYER_KIP)
+                    continue;
+                int old_x = e->x;
+                int moved = entity_move(i, 2, 0);
+                record_result(moved == 1,
+                              "reg_transition: player can move after transition");
+                e->x = old_x;
+            }
+        }
+    }
+}
+
 // Regression: START menu must be escapable (no same-frame bounce)
 static void test_start_menu_toggle(void) {
     // Ensure we're in EXPLORE first
@@ -671,6 +701,7 @@ int main(void) {
 
     // Regression tests
     test_spawn_walkable();
+    test_transition_spawn_walkable();
     test_start_menu_toggle();
     test_select_swap_roundtrip();
     test_sprite_visibility_after_draw();

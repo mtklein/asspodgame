@@ -1121,7 +1121,7 @@
             {
               "name": "target_map",
               "type": "string",
-              "value": "MAP_ID_TACO"
+              "value": "MAP_ID_STREETS"
             },
             {
               "name": "spawn_x",
@@ -1131,7 +1131,7 @@
             {
               "name": "spawn_y",
               "type": "int",
-              "value": 128
+              "value": 96
             }
           ],
           "id": 2,

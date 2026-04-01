@@ -1376,7 +1376,7 @@
             {
               "name": "spawn_y",
               "type": "int",
-              "value": 16
+              "value": 24
             }
           ],
           "id": 7,
