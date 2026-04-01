@@ -48,12 +48,6 @@ static const DialogueNode* get_node(void) {
     return 0;
 }
 
-static int str_len(const char *s) {
-    int n = 0;
-    while (s && s[n]) n++;
-    return n;
-}
-
 static int word_len(const char *s) {
     int n = 0;
     while (s[n] && s[n] != ' ' && s[n] != '\n') n++;
@@ -170,7 +164,7 @@ void dialogue_update(void) {
         return;
     }
 
-    switch (dlg_state) {
+    switch ((int)dlg_state) {
     case DLG_PRINTING: {
         int speed = key_held(KEY_B) ? 0 : PRINT_SPEED;
         print_timer++;
@@ -255,26 +249,25 @@ static const char* skip_pages(const char *text, int pages) {
     const char *p = text;
     for (int pg = 0; pg < pages; pg++) {
         int cx = 0;
-        int lines = 0;
         int chars = page_char_counts[pg];
         int count = 0;
 
         while (*p && count < chars) {
             if (*p == '\n') {
                 p++; count++;
-                cx = 0; lines++;
+                cx = 0;
                 continue;
             }
             if (*p == ' ' && cx > 0) {
                 int wl = word_len(p + 1);
                 if (cx + 1 + wl > TEXT_W && wl <= TEXT_W) {
                     p++; count++;
-                    cx = 0; lines++;
+                    cx = 0;
                     continue;
                 }
             }
             if (cx >= TEXT_W) {
-                cx = 0; lines++;
+                cx = 0;
             }
             p++; count++; cx++;
         }

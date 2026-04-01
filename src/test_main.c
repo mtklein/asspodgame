@@ -695,6 +695,4 @@ int main(void) {
     while (1) {
         vsync();
     }
-
-    return 0;
 }

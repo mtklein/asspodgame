@@ -32,7 +32,7 @@ static inline void mgba_log(int level, const char *msg) {
         i++;
     }
     dst[i] = '\0';
-    REG_DEBUG_FLAGS = level | 0x100; // 0x100 = send flag
+    REG_DEBUG_FLAGS = (u16)(level | 0x100); // 0x100 = send flag
 }
 
 // Simple number-to-string for test output (no sprintf on bare metal)
@@ -49,7 +49,7 @@ static inline void mgba_log_num(int level, const char *prefix, int value) {
         char tmp[12];
         int j = 0;
         while (value > 0 && j < 11) {
-            tmp[j++] = '0' + (value % 10);
+            tmp[j++] = (char)('0' + (value % 10));
             value /= 10;
         }
         while (j > 0) buf[i++] = tmp[--j];

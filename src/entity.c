@@ -95,7 +95,7 @@ static void entity_animate(Entity *e) {
     }
     // Layout: 4 directions × 2 frames × 4 tiles = 32 tiles per character
     // Each 16x16 sprite = 4 tiles (2×2 in 4bpp)
-    int frame_tiles = e->base_tile + (e->dir * 2 + e->anim_frame) * 4;
+    int frame_tiles = (int)(e->base_tile + (e->dir * 2 + e->anim_frame) * 4);
     sprite_set_tile(e->sprite_id, frame_tiles, 0);
 }
 
@@ -123,7 +123,7 @@ void player_update(void) {
     } else {
         player->anim_frame = 0;
         player->anim_timer = 0;
-        int frame_tiles = player->base_tile + player->dir * 2 * 4;
+        int frame_tiles = (int)(player->base_tile + player->dir * 2 * 4);
         sprite_set_tile(player->sprite_id, frame_tiles, 0);
     }
 
@@ -132,7 +132,7 @@ void player_update(void) {
         // Check for nearby NPC in facing direction
         int check_x = player->x + 8; // Center
         int check_y = player->y + 8;
-        switch (player->dir) {
+        switch ((int)player->dir) {
             case DIR_UP:    check_y -= 16; break;
             case DIR_DOWN:  check_y += 16; break;
             case DIR_LEFT:  check_x -= 16; break;

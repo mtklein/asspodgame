@@ -1,7 +1,7 @@
 builddir = out
 
 rule cc
-  command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -Wall -Wextra -Wno-unused-parameter -Iinclude -I$builddir -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
+  command = zig cc -target arm-freestanding-none -mcpu=arm7tdmi -mfloat-abi=soft -mthumb -O2 -fcolor-diagnostics -Werror -Weverything -Wno-padded -Wno-unsafe-buffer-usage -Wno-declaration-after-statement -Wno-covered-switch-default -Wno-switch-default -Wno-unused-parameter -Iinclude -I$builddir -fno-strict-aliasing -MD -MF $out.d -c $in -o $out
   depfile = $out.d
 
 rule as

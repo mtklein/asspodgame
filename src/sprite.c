@@ -27,7 +27,7 @@ void sprite_set_pos(int id, int x, int y) {
 }
 
 void sprite_set_tile(int id, int tile, int palbank) {
-    obj_buffer[id].attr2 = ATTR2_TILE(tile) | ATTR2_PALBANK(palbank) | ATTR2_PRIO(0);
+    obj_buffer[id].attr2 = (u16)(ATTR2_TILE(tile) | ATTR2_PALBANK(palbank) | ATTR2_PRIO(0));
 }
 
 void sprite_hide(int id) {
@@ -45,8 +45,8 @@ void sprite_set_size(int id, u16 shape, u16 size) {
 
 void sprite_load_tiles(const void *data, int tile_start, int num_bytes) {
     // Each 4bpp tile is 32 bytes; tile_start is in tile units
-    u32 dest = OBJ_VRAM_BASE + tile_start * 32;
-    dma3_copy((void*)dest, data, num_bytes / 4, DMA_32 | DMA_NOW);
+    u32 dest = (u32)(OBJ_VRAM_BASE + tile_start * 32);
+    dma3_copy((void*)dest, data, (u32)(num_bytes / 4), DMA_32 | DMA_NOW);
 }
 
 void sprite_load_palette(const u16 *pal, int palbank, int num_colors) {

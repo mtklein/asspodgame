@@ -53,7 +53,7 @@ void combat_update(void) {
 
     Entity *player = &entities[active_player];
 
-    switch (combat_state) {
+    switch ((int)combat_state) {
     case COMBAT_START:
         anim_timer++;
         if (anim_timer > 30) { // Brief "encounter!" flash
@@ -83,7 +83,7 @@ void combat_update(void) {
                 int dc = 2; // Base difficulty
                 CombatEnemy *target = &combat_enemies[target_cursor];
 
-                switch (selected_action) {
+                switch ((int)selected_action) {
                 case ACT_SHOOT:
                     stat = player->stats.shoot;
                     dc += target->stats.cool; // Enemy dodges with COOL
@@ -284,7 +284,7 @@ void combat_draw(void) {
     }
 
     // Draw based on state
-    switch (combat_state) {
+    switch ((int)combat_state) {
     case COMBAT_START:
         text_draw_string("!! ENCOUNTER !!", 24, 8, 9, 15);
         break;

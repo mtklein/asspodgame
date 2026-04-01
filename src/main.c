@@ -22,6 +22,4 @@ int main(void) {
         // Render
         game_draw();
     }
-
-    return 0;
 }

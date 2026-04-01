@@ -1,5 +1,6 @@
 // debug_input.c — On-screen key press display for debugging
 // Shows currently held keys as small sprites in the bottom-left corner.
+#include "debug_input.h"
 #include "gba.h"
 #include "input.h"
 #include "sprite.h"

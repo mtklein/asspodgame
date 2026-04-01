@@ -10,7 +10,7 @@
 #include "debug_input.h"
 
 GameState game_state = STATE_TITLE;
-int current_map_id = -1;
+static int current_map_id = -1;
 
 static int transition_timer = 0;
 static int title_blink = 0;
@@ -123,7 +123,7 @@ void game_update(void) {
 
     GameState prev_state = game_state;
 
-    switch (game_state) {
+    switch ((int)game_state) {
     case STATE_TITLE:
         if (key_hit(KEY_START)) {
             game_state = STATE_MAP_TRANSITION;
@@ -198,7 +198,7 @@ void game_update(void) {
 }
 
 void game_draw(void) {
-    switch (game_state) {
+    switch ((int)game_state) {
     case STATE_TITLE:
         title_draw();
         break;

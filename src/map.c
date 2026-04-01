@@ -85,7 +85,7 @@ u8 map_get_collision(int px, int py) {
 }
 
 void map_load_tileset(const void *tiles, int num_bytes, int cbb) {
-    dma3_copy((void*)CBB_ADDR(cbb), tiles, num_bytes / 4, DMA_32 | DMA_NOW);
+    dma3_copy((void*)CBB_ADDR(cbb), tiles, (u32)(num_bytes / 4), DMA_32 | DMA_NOW);
 }
 
 void map_load_palette(const u16 *pal, int num_colors) {
