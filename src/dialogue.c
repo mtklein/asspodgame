@@ -61,13 +61,13 @@ static void show_portrait(const char *speaker) {
         u16 *src_pal = (u16*)(MEM_PAL_OBJ);
         u16 *dst_pal = (u16*)(MEM_PAL_OBJ + 2 * 32);
         for (int i = 0; i < 16; i++) dst_pal[i] = src_pal[i];
-        dst_pal[0] = RGB15(3, 3, 16);  // blue background instead of transparent
+        dst_pal[0] = RGB15(2, 2, 14);  // match box fill color
     }
     sprite_set_tile(PORTRAIT_OAM_SLOT, PORTRAIT_TILE_BASE, 2);
     sprite_show(PORTRAIT_OAM_SLOT);
     // Position: NPC on left (x=8), PC on right (x=200), vertically above text box
     int px = portrait_is_pc ? 200 : 8;
-    int py = 120 - 40;
+    int py = 120 - 32;  // flush with top of dialogue box
     sprite_set_pos(PORTRAIT_OAM_SLOT, px, py);
 }
 
@@ -398,35 +398,34 @@ void text_init(void) {
     // Tile 10: solid blue fill (used to clear text areas in dialogue)
     for (int i = 80; i < 88; i++) dest[i] = 0x44444444;
 
-    // Tiles 1-9: FF-style blue gradient box with thin white border
-    // Colors: 1=dark blue, 2=white border, 3=mid blue, 4=lighter blue
-    // Tile 1: gradient fill (dark blue top to mid blue bottom)
-    dest[8]=0x11111111; dest[9]=0x11111111; dest[10]=0x31111111; dest[11]=0x31313131;
-    dest[12]=0x33333333; dest[13]=0x33333333; dest[14]=0x43333333; dest[15]=0x44444444;
-    // Tile 2: top-left corner (white border + gradient)
-    dest[16]=0x22222222; dest[17]=0x21111111; dest[18]=0x21111111; dest[19]=0x21111111;
-    dest[20]=0x21313131; dest[21]=0x23333333; dest[22]=0x23333333; dest[23]=0x24333333;
+    // Tiles 1-9: FF-style blue box with thin white border
+    // Colors: 1=dark blue (fill), 2=white (border), 3=mid-dark blue, 4=mid blue
+    // Tile 1: solid fill (mid blue — body of the box)
+    for (int i = 8; i < 16; i++) dest[i] = 0x33333333;
+    // Tile 2: top-left corner
+    dest[16]=0x22222222; dest[17]=0x21111111; dest[18]=0x21333333; dest[19]=0x21333333;
+    dest[20]=0x21333333; dest[21]=0x21333333; dest[22]=0x21333333; dest[23]=0x21333333;
     // Tile 3: top edge
-    dest[24]=0x22222222; dest[25]=0x11111111; dest[26]=0x11111111; dest[27]=0x11111111;
-    dest[28]=0x31313131; dest[29]=0x33333333; dest[30]=0x33333333; dest[31]=0x43333333;
+    dest[24]=0x22222222; dest[25]=0x11111111; dest[26]=0x33333333; dest[27]=0x33333333;
+    dest[28]=0x33333333; dest[29]=0x33333333; dest[30]=0x33333333; dest[31]=0x33333333;
     // Tile 4: top-right corner
-    dest[32]=0x22222222; dest[33]=0x11111112; dest[34]=0x11111112; dest[35]=0x11111112;
-    dest[36]=0x31313132; dest[37]=0x33333332; dest[38]=0x33333332; dest[39]=0x43333332;
-    // Tile 5: left edge (gradient continues)
-    dest[40]=0x24444444; dest[41]=0x24444444; dest[42]=0x24444444; dest[43]=0x24444444;
-    dest[44]=0x24444444; dest[45]=0x24444444; dest[46]=0x24444444; dest[47]=0x24444444;
+    dest[32]=0x22222222; dest[33]=0x11111112; dest[34]=0x33333312; dest[35]=0x33333312;
+    dest[36]=0x33333312; dest[37]=0x33333312; dest[38]=0x33333312; dest[39]=0x33333312;
+    // Tile 5: left edge
+    dest[40]=0x21333333; dest[41]=0x21333333; dest[42]=0x21333333; dest[43]=0x21333333;
+    dest[44]=0x21333333; dest[45]=0x21333333; dest[46]=0x21333333; dest[47]=0x21333333;
     // Tile 6: right edge
-    dest[48]=0x44444442; dest[49]=0x44444442; dest[50]=0x44444442; dest[51]=0x44444442;
-    dest[52]=0x44444442; dest[53]=0x44444442; dest[54]=0x44444442; dest[55]=0x44444442;
+    dest[48]=0x33333312; dest[49]=0x33333312; dest[50]=0x33333312; dest[51]=0x33333312;
+    dest[52]=0x33333312; dest[53]=0x33333312; dest[54]=0x33333312; dest[55]=0x33333312;
     // Tile 7: bottom-left
-    dest[56]=0x24444444; dest[57]=0x24444444; dest[58]=0x24444444; dest[59]=0x24444444;
-    dest[60]=0x24444444; dest[61]=0x24444444; dest[62]=0x24444444; dest[63]=0x22222222;
+    dest[56]=0x21333333; dest[57]=0x21333333; dest[58]=0x21333333; dest[59]=0x21333333;
+    dest[60]=0x21333333; dest[61]=0x21333333; dest[62]=0x21111111; dest[63]=0x22222222;
     // Tile 8: bottom edge
-    dest[64]=0x44444444; dest[65]=0x44444444; dest[66]=0x44444444; dest[67]=0x44444444;
-    dest[68]=0x44444444; dest[69]=0x44444444; dest[70]=0x44444444; dest[71]=0x22222222;
+    dest[64]=0x33333333; dest[65]=0x33333333; dest[66]=0x33333333; dest[67]=0x33333333;
+    dest[68]=0x33333333; dest[69]=0x33333333; dest[70]=0x11111111; dest[71]=0x22222222;
     // Tile 9: bottom-right
-    dest[72]=0x44444442; dest[73]=0x44444442; dest[74]=0x44444442; dest[75]=0x44444442;
-    dest[76]=0x44444442; dest[77]=0x44444442; dest[78]=0x44444442; dest[79]=0x22222222;
+    dest[72]=0x33333312; dest[73]=0x33333312; dest[74]=0x33333312; dest[75]=0x33333312;
+    dest[76]=0x33333312; dest[77]=0x33333312; dest[78]=0x11111112; dest[79]=0x22222222;
 
     // Load ASCII font (tiles 32..126 in charblock)
     // Replace transparent (index 0) with blue background (index 4)
@@ -443,13 +442,13 @@ void text_init(void) {
         font_dest[i] = out;
     }
 
-    // Palette 15 for text/UI — FF-style blue gradient
+    // Palette 15 for text/UI — FF-style blue box
     u16 *pal = (u16*)(MEM_PAL_BG + 15 * 32);
     pal[0]  = 0x0000;              // Transparent
-    pal[1]  = RGB15(1, 1, 12);    // Dark blue (top of gradient)
-    pal[2]  = RGB15(24, 24, 28);  // White-ish (thin border)
-    pal[3]  = RGB15(3, 3, 16);    // Mid blue
-    pal[4]  = RGB15(5, 5, 20);    // Lighter blue (bottom of gradient)
+    pal[1]  = RGB15(0, 0, 10);    // Dark blue (inner border line)
+    pal[2]  = RGB15(20, 20, 26);  // Light grey-blue (outer border line)
+    pal[3]  = RGB15(2, 2, 14);    // Mid-dark blue (box fill)
+    pal[4]  = RGB15(2, 2, 14);    // Same as 3 (font background = box fill)
     pal[15] = RGB15(31, 31, 31);  // White (font)
 }
 
