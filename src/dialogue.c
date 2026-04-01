@@ -11,9 +11,9 @@
 #define DLG_CBB     2    // Charblock for font tiles
 
 // Text box layout (in tiles)
-#define BOX_X       1
+#define BOX_X       0
 #define BOX_Y       15
-#define BOX_W       28
+#define BOX_W       30
 #define BOX_H       5
 #define TEXT_X      2
 #define TEXT_Y      16
@@ -56,7 +56,14 @@ static void show_portrait(const char *speaker) {
     }
     sprite_load_tiles(data, PORTRAIT_TILE_BASE, PORTRAIT_BYTES);
     sprite_set_size(PORTRAIT_OAM_SLOT, ATTR0_SQUARE, ATTR1_SIZE_32);
-    sprite_set_tile(PORTRAIT_OAM_SLOT, PORTRAIT_TILE_BASE, 0);
+    // Use palbank 2: same as character palette but index 0 = blue (not transparent)
+    {
+        u16 *src_pal = (u16*)(MEM_PAL_OBJ);
+        u16 *dst_pal = (u16*)(MEM_PAL_OBJ + 2 * 32);
+        for (int i = 0; i < 16; i++) dst_pal[i] = src_pal[i];
+        dst_pal[0] = RGB15(3, 3, 16);  // blue background instead of transparent
+    }
+    sprite_set_tile(PORTRAIT_OAM_SLOT, PORTRAIT_TILE_BASE, 2);
     sprite_show(PORTRAIT_OAM_SLOT);
     // Position: NPC on left (x=8), PC on right (x=200), vertically above text box
     int px = portrait_is_pc ? 200 : 8;
@@ -316,14 +323,16 @@ static const char* skip_pages(const char *text, int pages) {
     return p;
 }
 
+static void dlg_clear_region(int x, int y, int cw, int ch);
+
 void dialogue_draw(void) {
     if (dlg_state == DLG_INACTIVE) return;
 
     const DialogueNode *node = get_node();
     if (!node) return;
 
-    text_clear_region(DLG_SBB, TEXT_X, TEXT_Y, TEXT_W, LINES_PER_PAGE);
-    text_clear_region(DLG_SBB, NAME_X, NAME_Y, 12, 1);
+    dlg_clear_region(TEXT_X, TEXT_Y, TEXT_W, LINES_PER_PAGE);
+    dlg_clear_region(NAME_X, NAME_Y, 12, 1);
 
     if (node->speaker)
         text_draw_string(node->speaker, DLG_SBB, NAME_X, NAME_Y, 12);
@@ -383,8 +392,11 @@ void dialogue_draw(void) {
 void text_init(void) {
     u32 *dest = (u32*)CBB_ADDR(DLG_CBB);
 
-    // Tile 0: transparent
+    // Tile 0: transparent (used outside dialogue, e.g. title screen)
     for (int i = 0; i < 8; i++) dest[i] = 0;
+
+    // Tile 10: solid blue fill (used to clear text areas in dialogue)
+    for (int i = 80; i < 88; i++) dest[i] = 0x44444444;
 
     // Tiles 1-9: FF-style blue gradient box with thin white border
     // Colors: 1=dark blue, 2=white border, 3=mid blue, 4=lighter blue
@@ -458,4 +470,12 @@ void text_clear_region(int sbb, int x, int y, int w, int h) {
     for (int row = y; row < y + h; row++)
         for (int col = x; col < x + w; col++)
             map[row * 32 + col] = 0;
+}
+
+static void dlg_clear_region(int x, int y, int w, int h) {
+    u16 *map = (u16*)SBB_ADDR(DLG_SBB);
+    u16 fill = SE_TILE(10) | SE_PALBANK(15);  // solid blue tile
+    for (int row = y; row < y + h; row++)
+        for (int col = x; col < x + w; col++)
+            map[row * 32 + col] = fill;
 }

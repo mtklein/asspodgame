@@ -21,7 +21,7 @@ rule run_tests
 rule symlink
   command = ln -sf $in $out
 rule run_visual
-  command = out/screenshot ass_game.gba 60 0:start 10:none | python3 tools/ppm2png.py out/visual_tests/01_hq.png && out/screenshot ass_game.gba 100 0:start 10:none 35:right 51:none 53:up 62:none | python3 tools/ppm2png.py out/visual_tests/02_indicator.png && out/screenshot ass_game.gba 320 0:start 10:none 35:right 51:none 53:up 57:none 59:a 61:none | python3 tools/ppm2png.py out/visual_tests/03_dialogue.png && out/screenshot ass_game.gba 300 0:start 10:none 35:right 120:none 122:down 200:none | python3 tools/ppm2png.py out/visual_tests/04_scroll_south.png && python3 tools/visual_check.py out/visual_tests/ > $out
+  command = out/screenshot ass_game.gba 60 0:start 10:none | python3 tools/ppm2png.py out/visual_tests/01_hq.png && out/screenshot ass_game.gba 100 0:start 10:none 35:right 51:none 53:up 62:none | python3 tools/ppm2png.py out/visual_tests/02_indicator.png && out/screenshot ass_game.gba 320 0:start 10:none 35:right 51:none 53:up 57:none 59:a 61:none | python3 tools/ppm2png.py out/visual_tests/03_dialogue.png && out/screenshot ass_game.gba 300 0:start 10:none 35:right 120:none 122:down 200:none | python3 tools/ppm2png.py out/visual_tests/04_scroll_south.png && python3 tools/visual_check.py out/visual_tests/ tests/golden > $out
 rule run_emu
   command = open -a mGBA $in  pool = console
 rule bake_maps

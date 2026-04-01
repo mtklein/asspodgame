@@ -198,13 +198,50 @@ def run_checks(d):
               "%d color groups" % colors)
 
 
+def run_golden_checks(d, golden_dir):
+    """Compare each screenshot against its golden reference."""
+    if not os.path.isdir(golden_dir):
+        print("(no golden dir at %s, skipping golden checks)" % golden_dir)
+        return
+
+    for fname in sorted(os.listdir(golden_dir)):
+        if not fname.endswith(".png"):
+            continue
+        golden_path = os.path.join(golden_dir, fname)
+        test_path = os.path.join(d, fname)
+        if not os.path.exists(test_path):
+            check("golden %s exists" % fname, False, "test screenshot missing")
+            continue
+
+        gw, gh, gpx = read_png(golden_path)
+        tw, th, tpx = read_png(test_path)
+
+        if gw != tw or gh != th:
+            check("golden %s size match" % fname, False,
+                  "golden=%dx%d test=%dx%d" % (gw, gh, tw, th))
+            continue
+
+        diff_pixels = 0
+        for i in range(gw * gh):
+            gr, gg, gb, _ = gpx[i]
+            tr, tg, tb, _ = tpx[i]
+            if abs(gr - tr) + abs(gg - tg) + abs(gb - tb) > 10:
+                diff_pixels += 1
+
+        pct = diff_pixels * 100 // (gw * gh)
+        check("golden %s matches" % fname, pct == 0,
+              "%d pixels differ (%d%%)" % (diff_pixels, pct))
+
+
 def main():
     d = sys.argv[1] if len(sys.argv) > 1 else "out/visual_tests"
+    golden = sys.argv[2] if len(sys.argv) > 2 else "tests/golden"
     if not os.path.isdir(d):
         print("ERROR: %s not found" % d, file=sys.stderr)
         sys.exit(1)
 
     run_checks(d)
+    run_golden_checks(d, golden)
 
     print()
     print("Visual checks: %d passed, %d failed" % (passed, failed))
