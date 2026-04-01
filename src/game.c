@@ -7,6 +7,7 @@
 #include "dialogue.h"
 #include "combat.h"
 #include "game_data.h"
+#include "debug_input.h"
 
 GameState game_state = STATE_TITLE;
 
@@ -123,10 +124,14 @@ void game_init(void) {
 
     // Enable timer for RNG
     REG_TM0CNT_H = TM_ENABLE | TM_FREQ_1024;
+
+    // Debug: on-screen key display
+    debug_input_init();
 }
 
 void game_update(void) {
     input_poll();
+    debug_input_update();
 
     switch (game_state) {
     case STATE_TITLE:

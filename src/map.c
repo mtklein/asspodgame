@@ -49,6 +49,8 @@ void map_update_camera(int target_x, int target_y) {
     // Clamp to map bounds
     int max_x = (int)current_map->width * 8 - SCREEN_W;
     int max_y = (int)current_map->height * 8 - SCREEN_H;
+    if (max_x < 0) max_x = 0;
+    if (max_y < 0) max_y = 0;
 
     if (camera_x < 0) camera_x = 0;
     if (camera_y < 0) camera_y = 0;

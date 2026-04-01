@@ -12,6 +12,8 @@
 #   make          — Build the .gba ROM
 #   make clean    — Remove build artifacts
 #   make run      — Build and open in mGBA
+#   make test     — Build test ROM and run automated tests via mGBA
+#   make test-rom — Build just the test ROM
 
 # --- Toolchain (zig as a C cross-compiler) ---
 ZIG     ?= zig
@@ -31,8 +33,8 @@ SRCDIR  := src
 INCDIR  := include
 TOOLDIR := tools
 
-# --- Source files ---
-CFILES  := $(wildcard $(SRCDIR)/*.c)
+# --- Source files (exclude test_main.c from the regular build) ---
+CFILES  := $(filter-out $(SRCDIR)/test_main.c,$(wildcard $(SRCDIR)/*.c))
 SFILES  := $(wildcard $(SRCDIR)/*.s)
 OFILES  := $(patsubst $(SRCDIR)/%.c,$(BUILD)/%.o,$(CFILES)) \
            $(patsubst $(SRCDIR)/%.s,$(BUILD)/%.o,$(SFILES))
@@ -44,9 +46,30 @@ ASFLAGS := $(TARGET)
 LDFLAGS := $(TARGET) -mthumb -T gba_cart.ld -nostartfiles
 
 # --- Rules ---
-.PHONY: all clean run font
+.PHONY: all clean run font test test-rom
 
 all: $(ROM).gba
+
+# --- Test ROM (uses test_main.c instead of main.c) ---
+TEST_ROM  := $(ROM)_test
+TEST_SRC  := $(filter-out $(SRCDIR)/main.c,$(CFILES)) $(SRCDIR)/test_main.c
+TEST_OBJ  := $(patsubst $(SRCDIR)/%.c,$(BUILD)/test_%.o,$(TEST_SRC)) \
+             $(patsubst $(SRCDIR)/%.s,$(BUILD)/%.o,$(SFILES))
+
+$(BUILD)/test_%.o: $(SRCDIR)/%.c | $(BUILD)
+	$(ZIGCC) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/$(TEST_ROM).elf: $(TEST_OBJ)
+	$(ZIGCC) $(LDFLAGS) $^ -o $@
+
+$(TEST_ROM).gba: $(BUILD)/$(TEST_ROM).elf $(BUILD)/gbafix
+	python3 $(TOOLDIR)/elf2bin.py $< $@
+	$(BUILD)/gbafix $@
+
+test-rom: $(TEST_ROM).gba
+
+test: $(TEST_ROM).gba
+	python3 $(TOOLDIR)/run_tests.py $(TEST_ROM).gba
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -70,7 +93,7 @@ $(ROM).gba: $(BUILD)/$(ROM).elf $(BUILD)/gbafix
 	$(BUILD)/gbafix $@
 
 clean:
-	rm -rf $(BUILD) $(ROM).gba
+	rm -rf $(BUILD) $(ROM).gba $(TEST_ROM).gba $(TEST_ROM).sav
 
 run: $(ROM).gba
 	open -a mGBA $(ROM).gba

@@ -8,6 +8,9 @@
 extern u16 key_cur;
 extern u16 key_prev;
 
+// When nonzero, input_poll() skips the hardware read (for testing)
+extern u8 input_test_mode;
+
 // Call once per frame at start of update
 void input_poll(void);
 
