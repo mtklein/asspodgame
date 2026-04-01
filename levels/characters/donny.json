@@ -3,7 +3,6 @@
   "name": "Donny",
   "role": "npc",
   "entity_type": "ENT_NPC",
-
   "appearance": {
     "summary": "A heavyset, cheerful guy who looks like he just came from a barbecue. Hawaiian shirt untucked over khakis. Big grin. Probably has hot sauce in his pocket. The human embodiment of a Friday afternoon.",
     "build": "heavyset, soft, comfortable",
@@ -13,18 +12,26 @@
     "age_range": "early 30s",
     "height": "average"
   },
-
   "personality": {
-    "summary": "The team's morale officer whether anyone asked for one or not. Obsessed with the Taco-Bongo restaurant and 'boys' night.' Genuinely good-hearted — tries to keep spirits up through food and friendship. Somehow keeps getting away with not doing real work.",
-    "traits": ["cheerful", "food-obsessed", "social", "well-meaning"],
+    "summary": "The team's morale officer whether anyone asked for one or not. Obsessed with the Taco-Bongo restaurant and 'boys' night.' Genuinely good-hearted \u2014 tries to keep spirits up through food and friendship. Somehow keeps getting away with not doing real work.",
+    "traits": [
+      "cheerful",
+      "food-obsessed",
+      "social",
+      "well-meaning"
+    ],
     "speech_style": "Exclamation marks everywhere. Uses food as punctuation. 'GUYS! Boys' night! Let's Taco-Bongo our feelings!'",
-    "quirks": ["knows the Taco-Bongo menu by heart", "calls everything 'boys night' regardless of context", "always has guac"]
+    "quirks": [
+      "knows the Taco-Bongo menu by heart",
+      "calls everything 'boys night' regardless of context",
+      "always has guac"
+    ]
   },
-
   "sprite": {
-    "base_tile": "SPR_GENERIC_BASE"
+    "base_tile": "SPR_GENERIC_BASE",
+    "reference_image": "sprites/donny_front.png",
+    "generation_seed": 123
   },
-
   "dialogue_id": "DLG_DONNY_TACOS",
   "direction": "DIR_DOWN",
   "behavior": 0

@@ -3,7 +3,6 @@
   "name": "???",
   "role": "npc",
   "entity_type": "ENT_NPC",
-
   "appearance": {
     "summary": "A shadowy figure in a long coat and hat, face mostly hidden. Could be anyone. Leans against walls in alleys. The kind of person who says 'psst' unironically.",
     "build": "average, deliberately nondescript",
@@ -13,18 +12,26 @@
     "age_range": "indeterminate",
     "height": "average"
   },
-
   "personality": {
     "summary": "A street-level information broker. Knows things about R.A.D. and the warehouse on 5th. Cagey, transactional, wants to help just enough to be useful but not enough to get involved. Classic informant archetype.",
-    "traits": ["cautious", "cagey", "transactional", "street-smart"],
+    "traits": [
+      "cautious",
+      "cagey",
+      "transactional",
+      "street-smart"
+    ],
     "speech_style": "Whispers. Short sentences. 'Psst. You looking for something mechanical?' Cuts conversations short: 'That's all I got. Now beat it.'",
-    "quirks": ["looks over shoulder constantly", "speaks from the side of his mouth", "vanishes after giving info"]
+    "quirks": [
+      "looks over shoulder constantly",
+      "speaks from the side of his mouth",
+      "vanishes after giving info"
+    ]
   },
-
   "sprite": {
-    "base_tile": "SPR_GENERIC_BASE"
+    "base_tile": "SPR_GENERIC_BASE",
+    "reference_image": "sprites/informant_front.png",
+    "generation_seed": 123
   },
-
   "dialogue_id": "DLG_INFORMANT",
   "direction": "DIR_LEFT",
   "behavior": 0

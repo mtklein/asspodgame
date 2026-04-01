@@ -3,9 +3,8 @@
   "name": "Kip Simpkins",
   "role": "player",
   "entity_type": "ENT_PLAYER_KIP",
-
   "appearance": {
-    "summary": "Wiry and scrappy with wild magenta-dyed spiky hair. Wears a red leather jacket over jeans — looks more punk than cop. Has a bit of stubble and a permanent smirk. Smaller than Trevor but radiates 'do not mess with me' energy. Moves fast, hits hard.",
+    "summary": "Wiry and scrappy with wild magenta-dyed spiky hair. Wears a red leather jacket over jeans \u2014 looks more punk than cop. Has a bit of stubble and a permanent smirk. Smaller than Trevor but radiates 'do not mess with me' energy. Moves fast, hits hard.",
     "build": "lean, wiry, quick",
     "hair": "spiky, magenta/pink, wild",
     "skin_tone": "medium",
@@ -13,14 +12,21 @@
     "age_range": "late 20s",
     "height": "average"
   },
-
   "personality": {
-    "summary": "The quiet bruiser who lets his fists do the talking. Unflappable under pressure (highest Cool stat). Not dumb — decent Brains — just not chatty. When he does speak it's blunt and to the point. The straight man to Trevor's drama.",
-    "traits": ["stoic", "tough", "blunt", "reliable"],
+    "summary": "The quiet bruiser who lets his fists do the talking. Unflappable under pressure (highest Cool stat). Not dumb \u2014 decent Brains \u2014 just not chatty. When he does speak it's blunt and to the point. The straight man to Trevor's drama.",
+    "traits": [
+      "stoic",
+      "tough",
+      "blunt",
+      "reliable"
+    ],
     "speech_style": "Short sentences. No theatrics. Gets to the point. 'DFWTF comes first.' Says more with a look than a speech.",
-    "quirks": ["cracks knuckles before fights", "eats whatever's put in front of him without complaint", "never removes his jacket"]
+    "quirks": [
+      "cracks knuckles before fights",
+      "eats whatever's put in front of him without complaint",
+      "never removes his jacket"
+    ]
   },
-
   "stats": {
     "shoot": 1,
     "brawn": 3,
@@ -32,7 +38,6 @@
     "fate_points": 3,
     "fate_max": 5
   },
-
   "sprite": {
     "base_tile": "SPR_KIP_BASE",
     "palette_colors": {
@@ -42,9 +47,10 @@
       "pants": 7,
       "stubble": 2
     },
-    "walk_speed": 2
+    "walk_speed": 2,
+    "reference_image": "sprites/kip_simpkins_front.png",
+    "generation_seed": 123
   },
-
   "relationships": {
     "trevor_steel": "Partner. Lets Trevor do the talking. Trusts him completely, even when he's being ridiculous.",
     "rubik": "Respects the chain of command. Doesn't complain, just does the job.",
