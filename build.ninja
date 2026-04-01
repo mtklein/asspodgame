@@ -39,24 +39,25 @@ build $builddir/gen_dialogue.c $builddir/gen_dialogue.h: bake_dialogue | levels/
 build $builddir/gen_tileset.c $builddir/gen_tileset.h: bake_tileset | levels/tilesets/tileset_urban.png levels/tilesets/tileset_urban_pal.json
 
 # Shared objects (used by both game and test ROMs)
-build $builddir/combat.o: cc src/combat.c
-build $builddir/debug_input.o: cc src/debug_input.c
-build $builddir/dialogue.o: cc src/dialogue.c
-build $builddir/entity.o: cc src/entity.c
-build $builddir/game.o: cc src/game.c
-build $builddir/game_data.o: cc src/game_data.c
-build $builddir/gen_maps.o: cc $builddir/gen_maps.c
+# Order-only deps on generated headers ensure they exist on clean builds.
+build $builddir/combat.o: cc src/combat.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/debug_input.o: cc src/debug_input.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/dialogue.o: cc src/dialogue.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/entity.o: cc src/entity.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/game.o: cc src/game.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/game_data.o: cc src/game_data.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/gen_maps.o: cc $builddir/gen_maps.c || $builddir/gen_dialogue.h $builddir/gen_tileset.h
 build $builddir/gen_dialogue.o: cc $builddir/gen_dialogue.c
 build $builddir/gen_tileset.o: cc $builddir/gen_tileset.c
 build $builddir/input.o: cc src/input.c
 build $builddir/map.o: cc src/map.c
-build $builddir/sprite.o: cc src/sprite.c
-build $builddir/sprite_data.o: cc src/sprite_data.c
+build $builddir/sprite.o: cc src/sprite.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/sprite_data.o: cc src/sprite_data.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 build $builddir/crt0.o: as src/crt0.s
 
 # Game-only / test-only entry points
-build $builddir/main.o: cc src/main.c
-build $builddir/test_main.o: cc src/test_main.c
+build $builddir/main.o: cc src/main.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
+build $builddir/test_main.o: cc src/test_main.c || $builddir/gen_maps.h $builddir/gen_dialogue.h $builddir/gen_tileset.h
 
 # Game ROM
 build $builddir/ass_game.elf: link $builddir/main.o $builddir/combat.o $builddir/debug_input.o $builddir/dialogue.o $builddir/entity.o $builddir/game.o $builddir/game_data.o $builddir/gen_maps.o $builddir/gen_dialogue.o $builddir/gen_tileset.o $builddir/input.o $builddir/map.o $builddir/sprite.o $builddir/sprite_data.o $builddir/crt0.o
